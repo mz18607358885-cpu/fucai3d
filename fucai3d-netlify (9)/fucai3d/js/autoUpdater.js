@@ -144,7 +144,7 @@ window.FucaiAutoUpdater = (function () {
             if (data) {
               const before = data.history.length;
               data.history = window.FucaiFetcher.mergeNew(data.history, [msg.data.latest].filter(x => x.p && x.a !== undefined).map(x => ({
-                period: x.latest.p, date: x.latest.d, code: [x.latest.a, x.latest.b, x.latest.c]
+                period: x.p, date: x.d, code: [x.a, x.b, x.c]
               })));
               if (data.history.length > before) {
                 console.log(`[autoUpdater] 📡 收到其他 tab 广播,同步 ${data.history.length - before} 期`);
