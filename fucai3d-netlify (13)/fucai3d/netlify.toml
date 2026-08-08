@@ -21,6 +21,12 @@
 # 缓存:JS/CSS 用 hash 文件名(没 hash → 短缓存;主 HTML 始终 no-cache)
 # v5.7.7.2:改成短缓存 5 分钟,避免代码改了但 CDN 还是返回旧版
 [[headers]]
+  for = "/js/data.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+[[headers]]
   for = "/js/*"
   [headers.values]
     Cache-Control = "public, max-age=300, must-revalidate"
