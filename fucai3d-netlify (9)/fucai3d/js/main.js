@@ -1721,8 +1721,7 @@ window.FucaiMain = (function () {
     const genBtn = $('genTokenBtn');
     if (genBtn) {
       genBtn.addEventListener('click', async () => {
-7.
-Commit changes
+
         const t = await window.FucaiTokenAuth.createTokenAsync();
 if (!t) { toast('❌ 生成失败'); return; }
 const url = window.FucaiTokenAuth.makeSubUrl(t.id);
