@@ -8,12 +8,10 @@ window.FucaiCountdown = (function () {
   let onTickCb = null;
   let timer = null;
 
-  /** 下一期开奖时间(本地时区) */
   function nextDrawTime() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DRAW_HOUR, DRAW_MIN, 0);
     if (now >= today) {
-      // 今天的已过,跳到明天
       today.setDate(today.getDate() + 1);
     }
     return today;
@@ -39,13 +37,10 @@ window.FucaiCountdown = (function () {
     const target = nextDrawTime();
     const now = new Date();
     const remain = target - now;
-    const passed = (DRAW_HOUR * 60 + DRAW_MIN) * 60 * 1000 - remain - 1; // 1ms 内已开
-    const isAfterDrawToday = now.getHours() === DRAW_HOUR && now.getMinutes() >= DRAW_MIN;
-    const justDrawn = isAfterDrawToday;
     onTickCb && onTickCb({
       remain,
       target,
-      isAfterDrawToday: justDrawn,
+      isAfterDrawToday: false,
       text: fmt(remain)
     });
   }
