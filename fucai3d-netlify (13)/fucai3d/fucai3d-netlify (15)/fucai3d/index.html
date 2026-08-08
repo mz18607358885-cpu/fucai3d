@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>福彩3D 杀号系统专业版</title>
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="福彩3D 智能杀号专业版系统,综合 15 个通杀公式 + 定位杀码 + 胆码 + 二码组合 + 组三组六 + 倒计时">
+</head>
+<body>
+  <div id="app"><div style="padding:60px 20px;text-align:center;color:#a0a0b0;font-size:14px;">⏳ 加载中...</div></div>
+  <script>window.FUcaiPageRole = 'main';
+  // v5.7.1:主链接看到 URL 带 ?token= → 自动跳转副链接(防止旧版生成的错误 URL 失效)
+  (function() {
+    var t = new URLSearchParams(window.location.search).get('token');
+    if (t && /^vip-/.test(t)) {
+      var p = location.pathname.replace(/\/index\.html?$/i, '').replace(/\/?$/, '/');
+      location.replace(location.origin + p + 'sub.html?token=' + encodeURIComponent(t));
+      return;
+    }
+  })();
+  // 全局错误捕获:JS 出错时直接显示在页面上 + 详细堆栈
+  function showError(e, label) {
+    var app = document.getElementById('app');
+    if (!app) return;
+    var stack = (e.error && e.error.stack) || e.stack || '';
+    app.innerHTML = '<div style="padding:40px 20px;color:#ff5060;font-family:monospace;font-size:12px;line-height:1.6;max-width:900px;margin:40px auto;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:8px;word-break:break-all;white-space:pre-wrap;">❌ JS 错误' + (label ? ' ['+label+']' : '') + '\n\n消息: ' + (e.message || '未知') + '\n位置: ' + (e.filename || '') + ':' + (e.lineno || 0) + ':' + (e.colno || 0) + '\n\n堆栈:\n' + stack + '\n\n请按 Cmd+Shift+R (Mac) / Ctrl+Shift+R (Win) 强刷';
+  }
+  window.addEventListener('error', function(e) { showError(e, 'window.error'); });
+  window.addEventListener('unhandledrejection', function(e) { showError({message: e.reason, stack: e.reason && e.reason.stack}, 'promise'); });
+  // 包装 console.error 也捕获
+  var _origConsoleError = console.error;
+  console.error = function() { _origConsoleError.apply(console, arguments); try { showError({message: Array.from(arguments).join(' ')}, 'console.error'); } catch(_) {} };
+  </script>
+  <script src="js/data.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/countdown.js"></script>
+  <script src="js/dataFetcher.js"></script>
+  <script src="js/netlifyBackend.js"></script>
+  <script src="js/tokenAuth.js"></script>
+  <script src="js/autoUpdater.js"></script>
+  <script src="js/myBets.js"></script>
+  <script src="js/main.js"></script>
+  <script>FucaiMain.boot();</script>
+</body>
+</html>
