@@ -1720,14 +1720,17 @@ window.FucaiMain = (function () {
     // v5.7.1:副链接 token 管理(无时间限制)
     const genBtn = $('genTokenBtn');
     if (genBtn) {
-      genBtn.addEventListener('click', () => {
-        const t = window.FucaiTokenAuth.createToken();
-        const url = window.FucaiTokenAuth.makeSubUrl(t.id);
-        const box = $('newTokenBox');
-        const urlEl = $('newTokenUrl');
-        if (urlEl) urlEl.textContent = url;
-        if (box) box.style.display = 'block';
-        toast('✅ 副链接已生成(永久有效),记得复制');
+      genBtn.addEventListener('click', async () => {
+7.
+Commit changes
+        const t = await window.FucaiTokenAuth.createTokenAsync();
+if (!t) { toast('❌ 生成失败'); return; }
+const url = window.FucaiTokenAuth.makeSubUrl(t.id);
+const box = $('newTokenBox');
+const urlEl = $('newTokenUrl');
+if (urlEl) urlEl.textContent = url;
+if (box) box.style.display = 'block';
+toast(`✅ 副链接已生成,写到 GitHub 成功`);
       });
     }
     // v5.7.2:查询副链接(独立查询区)
