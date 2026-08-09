@@ -1,6 +1,7 @@
 // fetch-3d.js — Netlify Function: 抓 17500.cn 3D 数据 + 推 GitHub
 // 由 cron-job.org 每天 21:30 触发(或 workflow_dispatch 手动测试)
 const https = require('https');
+const http = require('http');
 
 const GH_OWNER = process.env.GH_OWNER || 'mz18607358885-cpu';
 const GH_REPO  = process.env.GH_REPO  || 'fucai3d';
@@ -8,15 +9,17 @@ const GH_TOKEN = process.env.GH_TOKEN;
 const GH_BRANCH = 'main';
 const GH_FILE = 'fucai3d-netlify (13)/fucai3d/latest.json';
 
-function httpsGet(url, redirectCount = 0) {
+function httpGet(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    if (redirectCount > 3) return reject(new Error('too many redirects'));
-    const req = https.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }, (res) => {
+    if (redirectCount > 5) return reject(new Error('too many redirects'));
+    const isHttps = url.startsWith('https://');
+    const lib = isHttps ? https : http;
+    const req = lib.get(url, { timeout: 20000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }, (res) => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
         const next = res.headers.location;
         if (!next) return reject(new Error('redirect without location'));
         const nextUrl = next.startsWith('http') ? next : new URL(next, url).toString();
-        return httpsGet(nextUrl, redirectCount + 1).then(resolve, reject);
+        return httpGet(nextUrl, redirectCount + 1).then(resolve, reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error('http ' + res.statusCode));
@@ -124,7 +127,7 @@ exports.handler = async (event) => {
     log.push(`[fetch-3d] start at ${new Date().toISOString()}`);
 
     // 1. 抓 17500
-    const txt = await httpsGet('https://www.17500.cn/getData/3d.TXT');
+    const txt = await httpGet('https://www.17500.cn/getData/3d.TXT');
     log.push(`[fetch-3d] raw size: ${txt.length}`);
 
     // 2. 解析最后 5 期
