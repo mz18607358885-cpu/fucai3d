@@ -1,5 +1,6 @@
 name: 抓取福彩3D最新开奖数据
-
+permissions:
+  contents: write
 on:
   schedule:
     - cron: "18 13 * * *"
