@@ -1887,8 +1887,9 @@ window.FucaiMain = (function () {
       }
       return result;
     } catch (e) {
-      console.error('fetch failed:', e);
-      if (!silent) toast('❌ 抓取失败:' + e.message + ' · 多试几次或稍后再试');
+      // 用 warn 而非 error:避免触发全局 console.error 劫持弹窗
+      console.warn('[v5.7.8] fetch failed:', e && e.message);
+      if (!silent) toast('❌ 抓取失败:' + (e && e.message) + ' · 多试几次或稍后再试');
       return null;
     }
   }
