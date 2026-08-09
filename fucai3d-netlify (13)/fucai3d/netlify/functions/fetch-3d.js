@@ -155,6 +155,20 @@ exports.handler = async (event) => {
     log.push(`[fetch-3d] push ok: ${pushResult.commit}`);
     log.push(`[fetch-3d] push detail: ${JSON.stringify(pushResult.detail || {})}`);
 
+    // 4. verify: 重新 GET 看文件是否真的更新
+    const verify = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}?ref=${GH_BRANCH}`);
+    log.push(`[fetch-3d] verify GET status=${verify.status}`);
+    if (verify.status === 200 && verify.body && verify.body.content) {
+      try {
+        const latestContent = JSON.parse(Buffer.from(verify.body.content, 'base64').toString('utf-8'));
+        log.push(`[fetch-3d] verify fetchedAt=${latestContent.fetchedAt}, source=${latestContent.source}, sha=${verify.body.sha.slice(0,8)}`);
+      } catch (e) {
+        log.push(`[fetch-3d] verify parse fail: ${e.message}`);
+      }
+    } else {
+      log.push(`[fetch-3d] verify fail: status=${verify.status}, body=${JSON.stringify(verify.body).slice(0,200)}`);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
