@@ -95,11 +95,12 @@ function ghRequest(method, path, body) {
 }
 
 async function pushLatest(items) {
-  if (!GH_TOKEN) throw new Error('GH_TOKEN env not set');
+  if (!GH_TOKEN) throw new Error('GH_TOKEN env not set (len=' + (process.env.GH_TOKEN || '').length + ')');
   // 取文件 sha (if exists)
   let sha;
   const getRes = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}?ref=${GH_BRANCH}`);
   if (getRes.status === 200) sha = getRes.body.sha;
+  console.log('[push] GET status=' + getRes.status + ' sha=' + (sha || 'none'));
 
   const content = {
     fetchedAt: new Date().toISOString(),
@@ -113,11 +114,14 @@ async function pushLatest(items) {
     branch: GH_BRANCH,
   };
   if (sha) body.sha = sha;
+  console.log('[push] PUT body keys=' + Object.keys(body).join(','));
   const putRes = await ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}`, body);
+  console.log('[push] PUT status=' + putRes.status);
   if (putRes.status >= 200 && putRes.status < 300) {
-    return { ok: true, commit: putRes.body.commit && putRes.body.commit.sha };
+    const commitSha = (putRes.body && putRes.body.commit && putRes.body.commit.sha) || (typeof putRes.body === 'string' ? 'raw:' + putRes.body.slice(0,100) : 'no-commit');
+    return { ok: true, commit: commitSha };
   }
-  throw new Error('GitHub PUT failed: ' + putRes.status + ' ' + JSON.stringify(putRes.body).slice(0, 300));
+  throw new Error('GitHub PUT failed: ' + putRes.status + ' ' + JSON.stringify(putRes.body).slice(0, 500));
 }
 
 exports.handler = async (event) => {
