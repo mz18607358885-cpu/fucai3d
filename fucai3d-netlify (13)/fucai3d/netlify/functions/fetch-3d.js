@@ -119,7 +119,18 @@ async function pushLatest(items) {
   console.log('[push] PUT status=' + putRes.status);
   if (putRes.status >= 200 && putRes.status < 300) {
     const commitSha = (putRes.body && putRes.body.commit && putRes.body.commit.sha) || (typeof putRes.body === 'string' ? 'raw:' + putRes.body.slice(0,100) : 'no-commit');
-    return { ok: true, commit: commitSha };
+    return {
+      ok: true,
+      commit: commitSha,
+      detail: {
+        status: putRes.status,
+        bodyKeys: putRes.body && typeof putRes.body === 'object' ? Object.keys(putRes.body) : 'string',
+        bodyMessage: putRes.body && putRes.body.message,
+        bodyCommitSha: putRes.body && putRes.body.commit && putRes.body.commit.sha,
+        getStatus: getRes.status,
+        fileSha: sha
+      }
+    };
   }
   throw new Error('GitHub PUT failed: ' + putRes.status + ' ' + JSON.stringify(putRes.body).slice(0, 500));
 }
@@ -142,6 +153,7 @@ exports.handler = async (event) => {
     // 3. push GitHub
     const pushResult = await pushLatest(items);
     log.push(`[fetch-3d] push ok: ${pushResult.commit}`);
+    log.push(`[fetch-3d] push detail: ${JSON.stringify(pushResult.detail || {})}`);
 
     return {
       statusCode: 200,
