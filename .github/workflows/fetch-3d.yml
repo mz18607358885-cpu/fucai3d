@@ -1,0 +1,42 @@
+name: 抓取福彩3D最新开奖数据
+
+on:
+  schedule:
+    - cron: "18 13 * * *"
+  workflow_dispatch:
+    inputs:
+      pagesize:
+        description: "抓几期"
+        default: "5"
+
+jobs:
+  fetch-3d:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 抓取 + 解析
+        run: |
+          PAGESIZE="${{ github.event.inputs.pagesize || 5 }}"
+          curl -sf "https://api.allorigins.win/raw?url=https%3A%2F%2Fm.500.com%2Findex.php%3Fc%3Dkaijiang%26a%3DajaxLoadMoreExpect%26lot%3Dsd%26page%3D1%26pagesize%3D${PAGESIZE}" -o /tmp/raw.json
+          mkdir -p "fucai3d-netlify (13)/fucai3d"
+          python3 -c "
+          import json, re
+          try:
+            with open('/tmp/raw.json','r',encoding='utf-8') as f: raw=f.read()
+          except: exit(0)
+          items=[]
+          if raw.strip().startswith('{'):
+            try:
+              d=json.loads(raw)
+              if d.get('code')=='100' and 'data' in d:
+                r=d['data'].get('result','')
+                p=r'kaij-tit[^>]*>(\d+)期<em>([\d\-]+).*?red-(?:ball|txt)\"[^>]*>(\d+)</li>\s*<li class=\"red-(?:ball|txt)\"[^>]*>(\d+)</li>\s*<li class=\"red-(?:ball|txt)\"[^>]*>(\d+)</li>'
+                for m in re.finditer(p, r, re.DOTALL):
+                  items.append({'p':m.group(1),'d':m.group(2),'a':int(m.group(3)),'b':int(m.group(4)),'c':int(m.group(5))})
+            except: pass
+          if not items:
+            print('no data'); exit(0)
+          for it in items:
+            a,b,c=it
