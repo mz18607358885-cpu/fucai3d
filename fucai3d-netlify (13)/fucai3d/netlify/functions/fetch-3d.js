@@ -94,14 +94,16 @@ function ghRequest(method, path, body) {
   });
 }
 
-async function pushLatest(items) {
+async function pushLatest(items, logArr) {
+  const pushLog = (msg) => { if (logArr) logArr.push(msg); console.log(msg); };
   if (!GH_TOKEN) throw new Error('GH_TOKEN env not set (len=' + (process.env.GH_TOKEN || '').length + ', use hardcoded for fucai3d repo)');
-  log.push(`[push] using owner=${GH_OWNER} repo=${GH_REPO} branch=${GH_BRANCH} token_len=${(GH_TOKEN||'').length}`);
+  pushLog(`[push] using owner=${GH_OWNER} repo=${GH_REPO} branch=${GH_BRANCH} token_len=${(GH_TOKEN||'').length}`);
   // 取文件 sha (if exists)
   let sha;
   const getRes = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}?ref=${GH_BRANCH}`);
   if (getRes.status === 200) sha = getRes.body.sha;
   console.log('[push] GET status=' + getRes.status + ' sha=' + (sha || 'none'));
+  pushLog(`[push] GET status=${getRes.status} sha=${(sha || 'none').slice(0,8)}`);
 
   const content = {
     fetchedAt: new Date().toISOString(),
@@ -116,8 +118,10 @@ async function pushLatest(items) {
   };
   if (sha) body.sha = sha;
   console.log('[push] PUT body keys=' + Object.keys(body).join(','));
+  pushLog(`[push] PUT body keys=${Object.keys(body).join(',')}`);
   const putRes = await ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}`, body);
   console.log('[push] PUT status=' + putRes.status);
+  pushLog(`[push] PUT status=${putRes.status}`);
   if (putRes.status >= 200 && putRes.status < 300) {
     const commitSha = (putRes.body && putRes.body.commit && putRes.body.commit.sha) || (typeof putRes.body === 'string' ? 'raw:' + putRes.body.slice(0,100) : 'no-commit');
     return {
@@ -152,7 +156,7 @@ exports.handler = async (event) => {
     log.push(`[fetch-3d] parsed ${items.length} periods, latest ${items[0].p} = ${items[0].a} ${items[0].b} ${items[0].c}`);
 
     // 3. push GitHub
-    const pushResult = await pushLatest(items);
+    const pushResult = await pushLatest(items, log);
     log.push(`[fetch-3d] push ok: ${pushResult.commit}`);
     log.push(`[fetch-3d] push detail: ${JSON.stringify(pushResult.detail || {})}`);
     log.push(`[fetch-3d] actually using owner=${GH_OWNER} repo=${GH_REPO}`);
