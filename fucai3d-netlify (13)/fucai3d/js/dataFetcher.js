@@ -126,7 +126,8 @@ window.FucaiFetcher = (function () {
         continue;
       }
     }
-    throw new Error('所有数据源都失败,已尝试: ' + tried.slice(0, 5).join(', '));
+    console.warn('[dataFetcher] 所有数据源都失败 (已尝试 ' + tried.length + ' 个),已尝试: ' + tried.slice(0, 5).join(', '));
+    return { items: [], source: null, tried };
   }
 
   // 合并新数据到现有 data(去重 + 排序)
@@ -155,9 +156,14 @@ window.FucaiFetcher = (function () {
 
   // 抓取并应用
   async function fetchAndApply() {
-    const result = await fetchLatest();
-    if (!result.items.length) throw new Error('没拿到新数据');
     const data = window.FucaiData;
+    if (!data) return { before: 0, after: 0, newItems: [], source: null, latest: null, next: null };
+    const result = await fetchLatest();
+    if (!result.items.length) {
+      console.log('[dataFetcher] 没拿到新数据,跳过 merge');
+      const before = data.history.length;
+      return { before, after: before, newItems: [], source: null, latest: data.latest, next: data.next };
+    }
     const before = data.history.length;
     data.history = mergeNew(data.history, result.items);
     data.history.sort((a, b) => b.p.localeCompare(a.p));
