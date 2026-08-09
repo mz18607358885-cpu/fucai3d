@@ -3,9 +3,9 @@
 const https = require('https');
 const http = require('http');
 
-const GH_OWNER = process.env.GH_OWNER || 'mz18607358885-cpu';
-const GH_REPO  = process.env.GH_REPO  || 'fucai3d';
-const GH_TOKEN = process.env.GH_TOKEN;
+const GH_OWNER = 'mz18607358885-cpu';  // hardcoded for fetch-3d
+const GH_REPO  = 'fucai3d';             // hardcoded for fetch-3d
+const GH_TOKEN = process.env.GH_TOKEN_FETCH3D || process.env.GH_TOKEN || process.env.FETCH3D_TOKEN;
 const GH_BRANCH = 'main';
 const GH_FILE = 'fucai3d-netlify (13)/fucai3d/latest.json';
 
@@ -95,7 +95,8 @@ function ghRequest(method, path, body) {
 }
 
 async function pushLatest(items) {
-  if (!GH_TOKEN) throw new Error('GH_TOKEN env not set (len=' + (process.env.GH_TOKEN || '').length + ')');
+  if (!GH_TOKEN) throw new Error('GH_TOKEN env not set (len=' + (process.env.GH_TOKEN || '').length + ', use hardcoded for fucai3d repo)');
+  log.push(`[push] using owner=${GH_OWNER} repo=${GH_REPO} branch=${GH_BRANCH} token_len=${(GH_TOKEN||'').length}`);
   // 取文件 sha (if exists)
   let sha;
   const getRes = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}?ref=${GH_BRANCH}`);
@@ -154,6 +155,7 @@ exports.handler = async (event) => {
     const pushResult = await pushLatest(items);
     log.push(`[fetch-3d] push ok: ${pushResult.commit}`);
     log.push(`[fetch-3d] push detail: ${JSON.stringify(pushResult.detail || {})}`);
+    log.push(`[fetch-3d] actually using owner=${GH_OWNER} repo=${GH_REPO}`);
 
     // 4. verify: 重新 GET 看文件是否真的更新
     const verify = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${encodeURIComponent(GH_FILE)}?ref=${GH_BRANCH}`);
