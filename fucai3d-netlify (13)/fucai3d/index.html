@@ -26,11 +26,32 @@
     var stack = (e.error && e.error.stack) || e.stack || '';
     app.innerHTML = '<div style="padding:40px 20px;color:#ff5060;font-family:monospace;font-size:12px;line-height:1.6;max-width:900px;margin:40px auto;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:8px;word-break:break-all;white-space:pre-wrap;">❌ JS 错误' + (label ? ' ['+label+']' : '') + '\n\n消息: ' + (e.message || '未知') + '\n位置: ' + (e.filename || '') + ':' + (e.lineno || 0) + ':' + (e.colno || 0) + '\n\n堆栈:\n' + stack + '\n\n请按 Cmd+Shift+R (Mac) / Ctrl+Shift+R (Win) 强刷';
   }
-  window.addEventListener('error', function(e) { showError(e, 'window.error'); });
-  window.addEventListener('unhandledrejection', function(e) { showError({message: e.reason, stack: e.reason && e.reason.stack}, 'promise'); });
-  // 包装 console.error 也捕获
+  // 忽略"Script error" — 这是浏览器对跨源 JS 错误的隐藏显示,通常无害(扩展/广告/CSP)
+  // 只显示真实错误
+  function isUsefulError(e) {
+    var msg = (e && e.message) || '';
+    if (msg === 'Script error.') return false;
+    if (msg === 'Script error') return false;
+    return true;
+  }
+  window.addEventListener('error', function(e) { if (isUsefulError(e)) showError(e, 'window.error'); });
+  window.addEventListener('unhandledrejection', function(e) {
+    var reason = e.reason;
+    var msg = (reason && (reason.message || reason)) || '';
+    if (msg === 'Script error.') return;  // 跨源 promise rejection
+    showError({message: String(msg), stack: reason && reason.stack}, 'promise');
+  });
+  // 包装 console.error 也捕获(忽略 Script error)
   var _origConsoleError = console.error;
-  console.error = function() { _origConsoleError.apply(console, arguments); try { showError({message: Array.from(arguments).join(' ')}, 'console.error'); } catch(_) {} };
+  console.error = function() {
+    _origConsoleError.apply(console, arguments);
+    try {
+      var args = Array.from(arguments);
+      var combined = args.join(' ');
+      if (combined === 'Script error.' || combined === 'Script error') return;
+      showError({message: combined}, 'console.error');
+    } catch(_) {}
+  };
   </script>
   <script src="js/data.js"></script>
   <script src="js/formulas.js"></script>
