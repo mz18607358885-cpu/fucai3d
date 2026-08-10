@@ -66,10 +66,10 @@ exports.handler = async (event) => {
     existing.last = new Date().toISOString();
     existing.visits = (existing.visits || 0) + 1;
   } else {
-    if (t.devices.length >= 5) {
+    if (t.devices.length >= 3) {
       return { statusCode: 200, headers, body: JSON.stringify({
-        ok: false, reason: `已达 5 台设备上限,无法在第 ${t.devices.length + 1} 台设备使用`,
-        devices: t.devices.length, maxDevices: 5
+        ok: false, reason: `已达 3 台设备上限,无法在第 ${t.devices.length + 1} 台设备使用`,
+        devices: t.devices.length, maxDevices: 3
       }) };
     }
     isNewDevice = true;
@@ -100,7 +100,7 @@ exports.handler = async (event) => {
   return { statusCode: 200, headers, body: JSON.stringify({
     ok: true,
     devices: t.devices.length,
-    maxDevices: 5,
+    maxDevices: 3,
     isNewDevice,
     expires: '永久'
   }) };
