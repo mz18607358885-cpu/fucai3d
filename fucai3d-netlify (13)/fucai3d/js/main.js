@@ -1894,10 +1894,15 @@ window.FucaiMain = (function () {
     }
   }
 
-  function boot() {
+  async function boot() {
     // v5.7.8:优先加载 GitHub Actions 抓的最新数据(每日 21:18 自动更新)
-    if (window.FucaiLatestLoader) {
-      window.FucaiLatestLoader.init();
+    // 必须 await,否则 render 会用 data.js 的旧数据(2026209),而不是 latest.json 的 2026211
+    if (window.FucaiLatestLoader && window.FucaiLatestLoader.init) {
+      try {
+        await window.FucaiLatestLoader.init();
+      } catch (e) {
+        console.warn('[v5.7.8 boot] latest loader fail:', e && e.message);
+      }
     }
 
     const existing = FucaiAuth.check();
