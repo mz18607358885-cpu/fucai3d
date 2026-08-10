@@ -53,17 +53,26 @@
     } catch(_) {}
   };
   </script>
-  <script src="js/data.js"></script>
-  <script src="js/formulas.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/countdown.js"></script>
-  <script src="js/dataFetcher.js"></script>
-  <script src="js/netlifyBackend.js"></script>
-  <script src="js/tokenAuth.js"></script>
-  <script src="js/latest.js"></script>
-  <script src="js/autoUpdater.js"></script>
-  <script src="js/myBets.js"></script>
-  <script src="js/main.js"></script>
-  <script>FucaiMain.boot();</script>
+  <script defer src="js/data.js"></script>
+  <script defer src="js/formulas.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/countdown.js"></script>
+  <script defer src="js/dataFetcher.js"></script>
+  <script defer src="js/netlifyBackend.js"></script>
+  <script defer src="js/tokenAuth.js"></script>
+  <script defer src="js/latest.js"></script>
+  <script defer src="js/autoUpdater.js"></script>
+  <script defer src="js/myBets.js"></script>
+  <script defer src="js/main.js"></script>
+  <script>
+    // v5.7.8v:用 DOMContentLoaded 替代直接调,等所有 defer JS 加载完再 boot
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.FucaiMain && window.FucaiMain.boot) {
+        window.FucaiMain.boot();
+      } else {
+        console.error('FucaiMain 未加载');
+      }
+    });
+  </script>
 </body>
 </html>
