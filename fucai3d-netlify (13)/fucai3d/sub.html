@@ -10,7 +10,13 @@
 <body>
   <div id="app"><div style="padding:60px 20px;text-align:center;color:#a0a0b0;font-size:14px;">⏳ 加载中...</div></div>
   <script>window.FUcaiPageRole = 'sub';
+  // 忽略"Script error" — 这是浏览器对跨源 JS 错误的隐藏显示,通常无害(扩展/广告/CSP)
+  function _isUsefulErr(e) {
+    var msg = (e && e.message) || '';
+    return msg !== 'Script error.' && msg !== 'Script error';
+  }
   window.addEventListener('error', function(e) {
+    if (!_isUsefulErr(e)) return;
     var app = document.getElementById('app');
     if (app) app.innerHTML = '<div style="padding:40px 20px;color:#ff5060;font-family:monospace;font-size:13px;line-height:1.7;max-width:800px;margin:0 auto;background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);border-radius:8px;margin-top:40px;">❌ JS 错误<br><br>' +
       '<b>' + (e.message || '未知错误') + '</b><br>' +
