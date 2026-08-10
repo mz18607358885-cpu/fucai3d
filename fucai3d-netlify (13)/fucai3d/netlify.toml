@@ -39,3 +39,9 @@
   for = "/js/data.js"
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
+
+# latest.json no-cache(避免 Netlify Edge 1 年缓存导致用户看到老数据)
+[[headers]]
+  for = "/latest.json"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
