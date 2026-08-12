@@ -12,7 +12,7 @@
   async function fetchLatestJson() {
     for (const url of LATEST_URLS) {
       try {
-        const res = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch(url, { cache: 'default' });
         if (res.ok) {
           const data = await res.json();
           if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
