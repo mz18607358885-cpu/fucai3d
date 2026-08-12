@@ -1,10 +1,12 @@
-// latest.js — 加载 GitHub Actions 抓取的最新数据
+// latest.js — v5.7.8w:直接调 Netlify Function 拿数据,不写 GitHub
+// function 加了 5 分钟 cache,5 分钟内 17500 只抓 1 次
 (function() {
   'use strict';
 
+  // 优先级:Netlify Function(直接读,无 CORS,有 5 分钟 cache) > GitHub raw(老 fallback)
   const LATEST_URLS = [
-    'https://raw.githubusercontent.com/mz18607358885-cpu/fucai3d/main/fucai3d-netlify%20(13)/fucai3d/latest.json',
-    'https://fc3dsh.netlify.app/latest.json'
+    'https://fc3dsh.netlify.app/.netlify/functions/fetch-3d',
+    'https://raw.githubusercontent.com/mz18607358885-cpu/fucai3d/main/fucai3d-netlify%20(13)/fucai3d/latest.json'
   ];
 
   async function fetchLatestJson() {
@@ -68,13 +70,13 @@
   }
 
   async function init() {
-    console.log('[latest.js] 开始加载 GitHub 最新数据...');
+    console.log('[latest.js] 开始加载 Netlify Function 最新数据...');
     const latest = await fetchLatestJson();
     if (!latest) {
-      console.log('[latest.js] 没有 latest.json,使用 data.js 内嵌数据');
+      console.log('[latest.js] function 不可用,使用 data.js 内嵌数据');
       return;
     }
-    console.log(`[latest.js] 加载 GitHub 最新数据 ${latest.count} 期,fetchedAt: ${latest.fetchedAt}`);
+    console.log(`[latest.js] 加载 ${latest.count} 期,fetchedAt: ${latest.fetchedAt}`);
     const merged = mergeLatest(latest);
     if (merged > 0) {
       console.log(`[latest.js] merge ${merged} 期,最新 ${window.FucaiData.latest.p}`);
