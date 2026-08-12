@@ -2,12 +2,6 @@
 
 [build]
   publish = "."
-  edge_functions = "netlify/edge-functions"
-
-# Edge Functions 配置(冷启动 < 100ms)
-[[edge_functions]]
-path = "/api/fetch-3d"
-function = "fetch-3d"
 
 # SPA 路由 fallback(让 /sub.html 等能直接访问)
 [[redirects]]
