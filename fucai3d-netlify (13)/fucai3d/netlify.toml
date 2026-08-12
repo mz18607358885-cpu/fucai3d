@@ -3,13 +3,13 @@
 [build]
   publish = "."
 
-# SPA 路由 fallback(让 /sub.html 等能直接访问)
+# SPA 路由 fallback
 [[redirects]]
   from = "/index.html"
   to = "/index.html"
   status = 200
 
-# 安全 headers(所有页面)
+# 安全 headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -17,7 +17,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# 其他 js/css: 5 分钟缓存
+# js/css 5 分钟缓存
 [[headers]]
   for = "/js/*"
   [headers.values]
@@ -28,19 +28,19 @@
   [headers.values]
     Cache-Control = "public, max-age=300, must-revalidate"
 
-# 主 HTML 始终 no-cache
+# 主 HTML no-cache
 [[headers]]
   for = "/index.html"
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
-# data.js 最后单独 no-cache(覆盖 /js/* 的 5 分钟,顺序很重要!)
+# data.js no-cache
 [[headers]]
   for = "/js/data.js"
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
-# latest.json no-cache(避免 Netlify Edge 1 年缓存导致用户看到老数据)
+# latest.json no-cache
 [[headers]]
   for = "/latest.json"
   [headers.values]
