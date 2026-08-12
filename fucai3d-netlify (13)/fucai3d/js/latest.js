@@ -3,9 +3,9 @@
 (function() {
   'use strict';
 
-  // 优先级:Netlify Function(直接读,无 CORS,有 5 分钟 cache) > GitHub raw(老 fallback)
+  // 优先级:Netlify Edge Function(冷启动 < 100ms) > GitHub raw(老 fallback)
   const LATEST_URLS = [
-    'https://fc3dsh.netlify.app/.netlify/functions/fetch-3d',
+    'https://fc3dsh.netlify.app/api/fetch-3d',
     'https://raw.githubusercontent.com/mz18607358885-cpu/fucai3d/main/fucai3d-netlify%20(13)/fucai3d/latest.json'
   ];
 
