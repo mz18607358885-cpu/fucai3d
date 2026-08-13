@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>福彩3D 杀号系统专业版</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <meta name="theme-color" content="#0a0e1a">
   <meta name="description" content="福彩3D 智能杀号专业版系统,综合 15 个通杀公式 + 定位杀码 + 胆码 + 二码组合 + 组三组六 + 倒计时">
 </head>
 <body>
@@ -73,6 +77,18 @@
         console.error('FucaiMain 未加载');
       }
     });
+  </script>
+  <script>
+    // v5.7.9:注册 Service Worker(PWA 离线缓存)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js').then(function(reg) {
+          console.log('[PWA] Service Worker 注册成功,scope:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[PWA] Service Worker 注册失败:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
