@@ -17,16 +17,16 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# js/css 5 分钟缓存
+# js/css 1 小时缓存(秒开)
 [[headers]]
   for = "/js/*"
   [headers.values]
-    Cache-Control = "public, max-age=300, must-revalidate"
+    Cache-Control = "public, max-age=3600, must-revalidate"
 
 [[headers]]
   for = "/css/*"
   [headers.values]
-    Cache-Control = "public, max-age=300, must-revalidate"
+    Cache-Control = "public, max-age=3600, must-revalidate"
 
 # 主 HTML no-cache
 [[headers]]
