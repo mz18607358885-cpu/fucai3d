@@ -1,6 +1,6 @@
 // service-worker.js — PWA 离线缓存
 // 缓存策略:cache-first(命中返回缓存,miss 走网络)
-const CACHE = 'fc3d-v1';
+const CACHE = 'fc3d-v2';  // v5.7.11:改名强制刷新缓存
 const ASSETS = [
   '/',
   '/index.html',
@@ -43,10 +43,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // 只处理 GET 请求
   if (event.request.method !== 'GET') return;
-  // 不缓存 Netlify Functions(让它们走网络)
+  // 不缓存 Netlify Functions(让它们走网络,保证最新)
   if (event.request.url.includes('/.netlify/functions/')) return;
   // 不缓存 latest.json(总是拿最新)
   if (event.request.url.includes('/latest.json')) return;
+  // 关键 JS 文件不缓存(避免老版本)
+  if (event.request.url.includes('/js/main.js') ||
+      event.request.url.includes('/js/auth.js') ||
+      event.request.url.includes('/js/latest.js') ||
+      event.request.url.includes('/js/formulas.js') ||
+      event.request.url.includes('/js/tokenAuth.js')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
