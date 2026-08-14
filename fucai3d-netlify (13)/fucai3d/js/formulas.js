@@ -257,6 +257,86 @@ window.FucaiFormula = (function () {
     return { axisNumbers: [...new Set(nums)].sort((a, b) => a - b), killPairs: pairs };
   }
 
+  // ════════════════════════════════════════════════
+  // v5.8 杀组选公式(200 期真实回测)
+  //   - 杀组三:连续组三 / 跨度≥7
+  //   - 杀组六:跨度1-2 / 和尾9
+  //   - 杀豹子:3数同012路
+  // ════════════════════════════════════════════════
+  function killZuxuan(ctx, history) {
+    const { A, B, C, S, K, history: hist } = ctx;
+    const W = S % 10;
+    const triggers = [];
+    let killZu3 = false;
+    let killZu6 = false;
+    let killBZ = false;
+
+    const cur = hist ? hist[0] : null;
+    const prev1 = hist ? hist[1] : null;
+    const prev2 = hist ? hist[2] : null;
+    function getType(h) {
+      if (!h) return '';
+      if (h.a === h.b && h.b === h.c) return '豹子';
+      if (h.a === h.b || h.b === h.c || h.a === h.c) return '组三';
+      return '组六';
+    }
+    const typeNow = getType(cur);
+    const typePrev1 = getType(prev1);
+    const typePrev2 = getType(prev2);
+
+    // ─── 杀组三规则 ───
+    if (typeNow === '组三' && typePrev1 === '组三') {
+      killZu3 = true;
+      triggers.push({ name: '连2期组三→杀组三', weight: 1.4, rate: 75.00 });
+    } else if (typeNow === '组三') {
+      killZu3 = true;
+      triggers.push({ name: '上期组三→杀组三', weight: 1.0, rate: 72.41 });
+    }
+    if (K >= 7) {
+      killZu3 = true;
+      triggers.push({ name: `跨度${K}≥7→杀组三`, weight: 1.3, rate: 75.00 });
+    }
+
+    // ─── 杀组六规则 ───
+    if (K === 2) {
+      killZu6 = true;
+      triggers.push({ name: '跨度2→杀组六', weight: 1.5, rate: 36.84 });
+    } else if (K === 1) {
+      killZu6 = true;
+      triggers.push({ name: '跨度1→杀组六', weight: 1.2, rate: 31.25 });
+    }
+    if (W === 9) {
+      killZu6 = true;
+      triggers.push({ name: '和尾9→杀组六', weight: 1.2, rate: 32.00 });
+    }
+
+    // ─── 杀豹子规则 ───
+    const routes = [A % 3, B % 3, C % 3];
+    if (new Set(routes).size === 1) {
+      killBZ = true;
+      triggers.push({ name: '3数同012路→杀豹子', weight: 1.5, rate: 100.00 });
+    }
+    if (typeNow === '豹子') {
+      killBZ = true;
+      triggers.push({ name: '上期豹子→杀豹子', weight: 1.5, rate: 100.00 });
+    }
+
+    let recommend = 'mixed';
+    if (killZu3 && !killZu6 && !killBZ) recommend = 'zu6';
+    else if (killZu6 && !killZu3 && !killBZ) recommend = 'zu3';
+    else if (killBZ && !killZu3 && !killZu6) recommend = 'mixed';
+    else if (killZu3 && killZu6) recommend = 'mixed';
+
+    return {
+      killZu3, killZu6, killBZ,
+      recommend,
+      triggers,
+      kill_zu3: killZu3,
+      kill_zu6: killZu6,
+      kill_baozi: killBZ
+    };
+  }
+
   // ─────────────────────────────────────────────
   // 综合主入口
   // ─────────────────────────────────────────────
@@ -271,8 +351,10 @@ window.FucaiFormula = (function () {
     const zuxuan = zuXuanRef(ctx, history);
     const adv = advanced(ctx, history);
     const axis = shiWeiZhouSha(ctx.B);
+    // v5.8 杀组选
+    const zuxuanKill = killZuxuan(ctx, history);
 
-    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis };
+    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis, zuxuanKill };
   }
 
   // ════════════════════════════════════════════════
@@ -872,7 +954,16 @@ window.FucaiFormula = (function () {
     '十位轴选 · 选对率':     { rate: 64.82, base: 65.7, level: 'low',  killRate: 64.82, killBase: 65.7, killLevel: 'low',  weight: 0.8 },
     '十位轴3数全 · 杀对率':  { rate: 35.18, base: 34.3, level: 'mid',  killRate: 35.18, killBase: 34.3, killLevel: 'mid',  weight: 1.0 },
     '十位轴单号 · 杀对率':   { rate: 35.18, base: 34.3, level: 'mid',  killRate: 35.18, killBase: 34.3, killLevel: 'mid',  weight: 1.0 },
-    '十位轴对子 · 杀对率':   { rate: 85.43, base: 85.0, level: 'mid',  killRate: 85.43, killBase: 85.0, killLevel: 'mid',  weight: 1.0 }
+    '十位轴对子 · 杀对率':   { rate: 85.43, base: 85.0, level: 'mid',  killRate: 85.43, killBase: 85.0, killLevel: 'mid',  weight: 1.0 },
+
+    // === v5.8 杀组选(200 期真实回测)===
+    '杀组三·上期组三':         { rate: 72.41, base: 71.43, level: 'mid',  killRate: 72.41, killBase: 71.43, killLevel: 'mid',  weight: 1.0 },
+    '杀组三·连2期组三':       { rate: 75.00, base: 71.43, level: 'high', killRate: 75.00, killBase: 71.43, killLevel: 'high', weight: 1.4 },
+    '杀组三·跨度≥7':         { rate: 75.00, base: 71.43, level: 'high', killRate: 75.00, killBase: 71.43, killLevel: 'high', weight: 1.3 },
+    '杀组六·跨度1':           { rate: 31.25, base: 28.57, level: 'mid',  killRate: 31.25, killBase: 28.57, killLevel: 'mid',  weight: 1.2 },
+    '杀组六·跨度2':           { rate: 36.84, base: 28.57, level: 'high', killRate: 36.84, killBase: 28.57, killLevel: 'high', weight: 1.5 },
+    '杀组六·和尾9':           { rate: 32.00, base: 28.57, level: 'mid',  killRate: 32.00, killBase: 28.57, killLevel: 'mid',  weight: 1.2 },
+    '杀豹子·3数同012路':      { rate: 100.00, base: 100,   level: 'high', killRate: 100.00, killBase: 100,  killLevel: 'high', weight: 1.5 }
   };
   const BACKTEST_SAMPLE = 199;   // 200-1=199 有效样本
   const BACKTEST_NOTE = '200 期真实回测杀号(2026-01-09 至 2026-08-09):杀号 1 个号基准 72.9%(=(9/10)^3);真正高于基准:三数相乘 77.23% / 上期十位 75.25% / A×5+B×8 74.26%';
@@ -917,6 +1008,6 @@ window.FucaiFormula = (function () {
     buildKillPool, buildDanPool, buildHeatMap, pairCodes, smartPick,
     getBacktestBadge, getBacktestSummary, BACKTEST,
     // v5.8 新导出
-    autoLearnWeights, computeColdNumber
+    autoLearnWeights, computeColdNumber, killZuxuan
   };
 })();
