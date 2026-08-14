@@ -453,14 +453,19 @@ window.FucaiMain = (function () {
       .map(k => k.code);
     const realExclude = new Set([...axisNums, ...shiqiweiKill]);
     const userKills = new Set(getUserKills());  // 用户手动杀号
-    const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀(恢复成候选)
-    // 候选 = 0-9 - 真正的排除 - 用户手动杀 + 用户从系统杀里恢复的
-    const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
-    const allExclude = new Set([...effectiveExclude, ...userKills]);
+    const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀
+    // v5.7.19:反对 ≠ 恢复成候选,反对 = 标记"我反对这个号被杀",但**选号时不选**
+    //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀
+    //   反对的号 显示在"反对区"(虚线橙黄),不进绿色候选
+    const allExclude = new Set([...realExclude, ...userKills]);
     const candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
     const restBai = [...candidates];
     const restShi = [...candidates];
     const restGe  = [...candidates];
+    // 反对的号(从 realExclude 反对的,或额外的)— 仍属于"被杀"(算法继续杀),只换样式
+    const antiRestored = new Set([...realExclude].filter(n => userAntiKills.has(n)));
+    // 剩余系统杀(未被反对的)
+    const realExcludeRemaining = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
 
     // exBai/exShi/exGe 保留(供"被杀"展示,跟 fushi 兼容)
     const exBai = new Set([
@@ -484,9 +489,12 @@ window.FucaiMain = (function () {
 
     // v5.7:候选号 = 可点击 → 加入我的杀号;用户杀号 = 可点击 → 恢复候选
     // v5.7.14:系统杀的真排除 = 可点击 → 用户"反对",恢复成候选
+    // v5.7.19:反对 ≠ 恢复候选,反对 = 标记"我反对",选号时仍不选
     const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="点击 → 加入我的杀号" style="cursor:pointer;">${n}</span>`;
     const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="我的杀号,点击恢复" style="cursor:pointer;border-color:#ff5060;">${n}</span>`;
-    const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="系统杀,点击 → 恢复成候选(我反对)" style="cursor:pointer;border-color:#f3c969;border-style:dashed;">${n}</span>`;
+    const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="系统杀,点击 → 我反对(取消系统杀,改为手动选)" style="cursor:pointer;border-color:#f3c969;border-style:dashed;">${n}</span>`;
+    // v5.7.19:反对的号(原系统杀 + 用户反对)— 半透明橙黄,标"反对"
+    const antiSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="我反对系统杀这个号,选号时会避开 · 点击 → 取消反对" style="cursor:pointer;border-color:#a07a3a;border-style:dotted;background:rgba(243,201,105,.05);color:#806040;text-decoration:line-through;">${n}</span>`;
     const codeList = (arr) => arr.map(candSpan).join('') || '<span class="empty-tag">无</span>';
     const killList = (set, useMineSpan) => Array.from(set).sort().map(n => useMineSpan(n)).join('');
     const isLow = restBai.length <= 3 || restShi.length <= 3 || restGe.length <= 3;
@@ -630,14 +638,14 @@ window.FucaiMain = (function () {
             </button>
           </div>
           <div style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.5;">
-            💡 从备选号(${restBai.length}) 随机组合,系统按权重均衡选择
+            💡 大数据加权(200期热号×1.5/对码×1.1/冷号×0.4) + 自学习(上期选过→降权60%避重)
           </div>
         </div>
 
         <!-- 候选预览 -->
         <div class="candidate-box">
           <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span>${excludeInfo} · 候选 = 0-9 - 排除 · <span style="color:#6ef09e;">候选</span>点击=杀号 · <span style="color:#ff5060;">我的杀</span>点击=恢复 · <span style="color:#f3c969;border-bottom:1px dashed #f3c969;">系统杀</span>点击=反对(恢复候选)</span>
+            <span>${excludeInfo} · <span style="color:#6ef09e;">候选</span>=可加杀 · <span style="color:#ff5060;">我的杀</span>=点击恢复 · <span style="color:#f3c969;border-bottom:1px dashed #f3c969;">系统杀</span>=点击反对 · <span style="color:#806040;border-bottom:1px dotted #806040;">反对</span>=取消反对</span>
             ${userKills.size > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我加的 ${userKills.size} 个</button>` : ''}
             ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除我反对的 ${userAntiKills.size} 个</button>` : ''}
           </div>
@@ -649,7 +657,8 @@ window.FucaiMain = (function () {
             </div>
             <div class="cand-list">
               ${codeList(restBai)}
-              ${realExclude.size > 0 ? Array.from(realExclude).map(realKillSpan).join('') : ''}
+              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
+              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
               ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
             </div>
           </div>
@@ -660,7 +669,8 @@ window.FucaiMain = (function () {
             </div>
             <div class="cand-list">
               ${codeList(restShi)}
-              ${realExclude.size > 0 ? Array.from(realExclude).map(realKillSpan).join('') : ''}
+              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
+              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
               ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
             </div>
           </div>
@@ -671,7 +681,8 @@ window.FucaiMain = (function () {
             </div>
             <div class="cand-list">
               ${codeList(restGe)}
-              ${realExclude.size > 0 ? Array.from(realExclude).map(realKillSpan).join('') : ''}
+              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
+              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
               ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
             </div>
           </div>
@@ -1565,88 +1576,139 @@ window.FucaiMain = (function () {
   }
 
   function doGenerate() {
-    // v5.7.17:从备选号(百/十/个 候选)直接随机组合,不再用策略
-    // 候选 = 0-9 - 排除集(算法杀 + 用户杀 - 用户反对)
-    const result = _result;  // 之前已经算过 _result 包含 killPool, danPool, ctx 等
-    const candidates = result && result.allExclude ? null : null;  // 重新算
-
-    // 重新算候选(避免依赖 _result 状态)
-    const allExcludeArr = [];
-    // 系统杀
-    if (result && result.killPool) {
-      // 之前 buildKillPool 算过
-    }
-    // 简单算法:从 _result 拿 candidates(实际 main.js 里有 userKills 变量)
-    const ctx = _result && _result.ctx ? _result.ctx : null;
-    if (!ctx) {
+    // v5.7.19:专业 3D 选号 — 加权 + 学习 + 去重
+    //   1. 候选 = 0-9 - 真排除(系统杀 - 用户反对) - 用户杀
+    //   2. 加权 = 热号 ∩ 候选 + 对码 ∩ 候选 + 默认 + 上期降权(自学习)
+    //   3. 100% 唯一组合(去重),不够时用 duplicate-fill
+    if (!_result || !_killPool) {
       toast('⚠️ 数据未加载,稍后再试');
       return;
     }
-
-    // 用百/十/个 三个候选数组
     const kp = _killPool;
-    // 合并 系统杀 + 用户杀 - 用户反对
-    const effectiveBaiEx = new Set([
-      ...kp.baiAll.map(x => x.code),
-      ...kp.killHeWei,
-      ...getUserKills()
-    ]);
-    const effectiveShiEx = new Set([
-      ...kp.shiAll.map(x => x.code),
-      ...kp.killHeWei,
-      ...getUserKills()
-    ]);
-    const effectiveGeEx = new Set([
-      ...kp.geAll.map(x => x.code),
-      ...kp.killHeWei,
-      ...getUserKills()
-    ]);
-    // 候选(去掉 effective 排除 + 用户反对)
-    const antiKills = new Set(getUserAntiKills());
-    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveBaiEx.has(n) || antiKills.has(n));
-    const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveShiEx.has(n) || antiKills.has(n));
-    const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveGeEx.has(n) || antiKills.has(n));
+    const axisNums = new Set((kp.axis && kp.axis.axisNumbers) || []);
+    const shiqiweiKill = new Set(
+      (kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code)
+    );
+    const realExclude = new Set([...axisNums, ...shiqiweiKill]);
+    const userKills = new Set(getUserKills());
+    const userAntiKills = new Set(getUserAntiKills());
+    const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
+    const allExclude = new Set([...effectiveExclude, ...userKills]);
+
+    // 候选 = 0-9 - allExclude
+    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
+    const restShi = [...restBai];
+    const restGe  = [...restBai];
 
     if (!restBai.length || !restShi.length || !restGe.length) {
       toast('⚠️ 候选为空,无法生成');
       return;
     }
 
+    // ─── 大数据加权 ───
+    const heat = _heatMap || { hot4: [], hot30: [], hotBoth: [], hot: [], warm: [], cold: [] };
+    const hotBoth = new Set(heat.hotBoth && heat.hotBoth.length ? heat.hotBoth : (heat.hot || []));
+    const hot4Only = new Set((heat.hot4 || []).filter(x => !hotBoth.has(x)));
+    const hot30 = new Set(heat.hot30 || []);
+    const warm = new Set(heat.warm || []);
+    const cold = new Set(heat.cold || []);
+    // 对码(从 ctx.A/B/C 算)
+    const ctx = _result.ctx;
+    const pairBai = new Set(FucaiFormula.pairCodes([ctx.A]));
+    const pairShi = new Set(FucaiFormula.pairCodes([ctx.B]));
+    const pairGe  = new Set(FucaiFormula.pairCodes([ctx.C]));
+
+    // ─── 自学习:上期选过的号 + 上上期 ───
+    // 选过 1 期前 = 降权 0.4(避免完全重复)
+    // 选过 2 期前 = 降权 0.7(还热,但降)
+    let historyPicks = [];
+    try {
+      historyPicks = JSON.parse(localStorage.getItem('fucai3d_last_picks') || '[]');
+    } catch (e) {}
+    const last1 = new Set(historyPicks.slice(-1).flat().map(x => +x));
+    const last2 = new Set(historyPicks.slice(-2, -1).flat().map(x => +x));
+
+    function buildWeight(rest, pairSet) {
+      // 给每个候选号算权重
+      const weighted = [];
+      for (const n of rest) {
+        let w = 1.0;
+        if (hotBoth.has(n)) w = Math.max(w, 1.5);   // 短期 ∩ 中期 = 真热
+        else if (hot4Only.has(n)) w = Math.max(w, 1.2);  // 短期热
+        else if (hot30.has(n)) w = Math.max(w, 1.0);  // 中期热
+        if (warm.has(n)) w = Math.max(w, 0.8);
+        if (cold.has(n)) w = Math.max(w, 0.4);
+        if (pairSet.has(n)) w = Math.max(w, 1.1);
+        // 自学习:上期选过 → 降权(避免连续重复)
+        if (last1.has(n)) w *= 0.4;
+        else if (last2.has(n)) w *= 0.7;
+        weighted.push({ code: n, weight: w });
+      }
+      return weighted;
+    }
+
+    const wBai = buildWeight(restBai, pairBai);
+    const wShi = buildWeight(restShi, pairShi);
+    const wGe  = buildWeight(restGe,  pairGe);
+
+    // 加权随机选(用 cumulative distribution)
+    function pickWeighted(weighted) {
+      const total = weighted.reduce((s, x) => s + x.weight, 0);
+      let r = Math.random() * total;
+      for (const x of weighted) {
+        r -= x.weight;
+        if (r <= 0) return x.code;
+      }
+      return weighted[weighted.length - 1].code;
+    }
+
     const n = _pickState.count;
-    // 笛卡尔积 数量
     const totalCombos = restBai.length * restShi.length * restGe.length;
     const actualN = Math.min(n, totalCombos);
 
-    // 从候选里**随机选**(加权让 0-9 平均)
-    // 用 累积分布 让每个号被选概率相似
-    const pickOne = (arr) => {
-      // 简单随机(可加权重)
-      return arr[Math.floor(Math.random() * arr.length)];
-    };
-
     const picks = [];
-    const seen = new Set();  // 防重
-    while (picks.length < actualN && seen.size < totalCombos) {
-      const a = pickOne(restBai);
-      const b = pickOne(restShi);
-      const c = pickOne(restGe);
+    const seen = new Set();
+    let safety = 0;
+    while (picks.length < actualN && seen.size < totalCombos && safety < 10000) {
+      safety++;
+      const a = pickWeighted(wBai);
+      const b = pickWeighted(wShi);
+      const c = pickWeighted(wGe);
       const key = `${a}${b}${c}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const isZu3 = (a === b || b === c || a === c);
       const type = isZu3 ? '组三' : '组六';
+      // 描述(为什么选这注)
+      const desc = [];
+      if (hotBoth.has(a) || hot4Only.has(a)) desc.push(`百${a}热`);
+      if (hotBoth.has(b) || hot4Only.has(b)) desc.push(`十${b}热`);
+      if (hotBoth.has(c) || hot4Only.has(c)) desc.push(`个${c}热`);
+      if (pairBai.has(a)) desc.push(`百${a}对码`);
+      if (pairShi.has(b)) desc.push(`十${b}对码`);
+      if (pairGe.has(c))  desc.push(`个${c}对码`);
+      if (last1.has(a) || last1.has(b) || last1.has(c)) desc.push('含上期号');
+      const reason = desc.length ? desc.join('·') : '常规加权';
       picks.push({
-        a, b, c, type,
+        a, b, c, type, reason,
         period: window.FucaiData.next ? window.FucaiData.next.period : '?',
-        source: 'random-candidate-v5.7.17',
-        strategy: '系统从备选号随机'
+        source: 'weighted-v5.7.19'
       });
     }
-    // 如果选不到 N 个(unique 不足),补重复
+
+    // 不够 N 注时(组合数不足),补重复(标 duplicate)
     while (picks.length < n && picks.length > 0) {
       const t = picks[Math.floor(Math.random() * picks.length)];
-      picks.push({ ...t, source: 'duplicate-fill' });
+      picks.push({ ...t, reason: t.reason + '·(复用)', source: 'duplicate-fill' });
     }
+
+    // ─── 自学习:保存这一期选的号 ───
+    try {
+      const newHist = [...historyPicks, picks.map(x => `${x.a}${x.b}${x.c}`)];
+      // 只留最近 5 期
+      while (newHist.length > 5) newHist.shift();
+      localStorage.setItem('fucai3d_last_picks', JSON.stringify(newHist));
+    } catch (e) {}
 
     _pickState.last = {
       picks,
@@ -1654,13 +1716,17 @@ window.FucaiMain = (function () {
       before: 0,
       after: 0,
       newItems: picks,
-      source: 'random-candidate',
-      strategies: ['随机'],  // v5.7.17:UI 隐藏策略
+      source: 'weighted-v5.7.19',
+      strategies: ['大数据加权'],
       latest: window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest : null,
       next: window.FucaiData && window.FucaiData.next ? window.FucaiData.next : null
     };
 
-    toast(`✅ 已从备选号(百${restBai.length}/十${restShi.length}/个${restGe.length})生成 ${picks.length} 注`);
+    const usedHot = picks.filter(x =>
+      hotBoth.has(x.a) || hotBoth.has(x.b) || hotBoth.has(x.c) ||
+      hot4Only.has(x.a) || hot4Only.has(x.b) || hot4Only.has(x.c)
+    ).length;
+    toast(`✅ 已从候选(百${restBai.length})加权选 ${picks.length} 注 · ${usedHot} 注含热号 · 已自学习`);
     switchTab('pick');
   }
 
