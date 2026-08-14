@@ -692,12 +692,16 @@ window.FucaiMain = (function () {
               ${(() => {
                 // v5.8+ 推荐(根据当前期)
                 const suggests = FucaiFormula.suggestKillContain(_result.ctx);
+                const curPeriod = (window.FucaiData && window.FucaiData.latest) ? window.FucaiData.latest.p : '?';
                 return `<div style="margin-top:8px;padding:8px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;">
-                  <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-bottom:4px;">🧠 系统推荐(200 期回测):</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:11px;color:#a78bfa;font-weight:600;">🧠 系统推荐(200 期回测 · 基于 ${curPeriod} 期)</span>
+                    <button class="opt-btn xs" data-refresh-suggest style="font-size:10px;padding:2px 8px;">🔄 刷新</button>
+                  </div>
                   ${suggests.map(s => `<button class="opt-btn xs" data-kc-add="${s.num}" style="margin:2px;font-family:monospace;">
                     🚫 杀 <strong style="color:#ff5060;">${s.num}</strong> · <span style="color:#a78bfa;">${s.rate}%</span>
                   </button>`).join('')}
-                  <div style="font-size:10px;color:var(--text-3);margin-top:4px;">点推荐 = 自动加入杀组选(可叠加)</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:4px;">点推荐 = 自动加入杀组选(可叠加) · 下期开奖后自动重算</div>
                 </div>`;
               })()}
             </div>
@@ -1609,6 +1613,18 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.8+ 手动刷新推荐(重新算 suggestKillContain)
+    document.querySelectorAll('[data-refresh-suggest]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!_result) return;
+        // 强制重算 ctx(从 data.history)
+        const fresh = FucaiFormula.run(data.history, parseInt(String(data.next.period).slice(-1), 10));
+        _result = fresh;
+        window.__lastResult = fresh;
+        toast('🔄 推荐已刷新(基于 ' + (data.latest ? data.latest.p : '当前期') + ')');
+        switchTab('pick');
+      });
+    });
     // 生成
     const gen = $('genBtn');
     if (gen) gen.addEventListener('click', doGenerate);
@@ -2285,6 +2301,26 @@ window.FucaiMain = (function () {
         console.warn('[v5.7.8 boot] latest loader fail:', e && e.message);
       }
     }
+
+    // v5.8+:每 5 分钟自动检查新期(确保推荐是最新)
+    //   - 检测 data.latest.p 变了 → 重新 render → 推荐/共识/自学习 都更新
+    if (window.__autoRefreshInterval) clearInterval(window.__autoRefreshInterval);
+    window.__autoRefreshInterval = setInterval(async () => {
+      try {
+        const beforeP = window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest.p : null;
+        if (window.FucaiLatestLoader && window.FucaiLatestLoader.reload) {
+          await window.FucaiLatestLoader.reload();
+        }
+        const afterP = window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest.p : null;
+        if (beforeP && afterP && beforeP !== afterP) {
+          // 新期了,重新 render
+          if (typeof render === 'function') render();
+          toast(`🔔 新期 ${afterP} 已出,推荐已自动更新`);
+        }
+      } catch (e) {
+        // 静默失败
+      }
+    }, 5 * 60 * 1000);  // 5 分钟
 
     const existing = FucaiAuth.check();
     if (existing && existing.role === role) {
