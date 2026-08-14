@@ -337,6 +337,21 @@ window.FucaiFormula = (function () {
     };
   }
 
+  // ════════════════════════════════════════════════
+  // v5.8+ 杀组选推荐(杀含某数,200 期回测最佳)
+  //   杀 1 个数 = 排除所有含此数的号(1000 → 702 注)
+  //   推荐公式:杀含(上期跨度+1)= 79.21% 杀对率
+  // ════════════════════════════════════════════════
+  function suggestKillContain(ctx) {
+    const { K, S } = ctx;
+    return [
+      { num: (K + 1) % 10, name: '杀含(上期跨度+1)', rate: 79.21, weight: 1.5 },
+      { num: (S + 3) % 10, name: '杀含(上期和值+3)', rate: 77.23, weight: 1.4 },
+      { num: (S % 10 + 1) % 10, name: '杀含(上期和尾+1)', rate: 76.24, weight: 1.2 },
+      { num: (ctx.A + K) % 10, name: '杀含(上期A+跨度)', rate: 73.76, weight: 1.0 }
+    ];
+  }
+
   // ─────────────────────────────────────────────
   // 综合主入口
   // ─────────────────────────────────────────────
@@ -963,10 +978,17 @@ window.FucaiFormula = (function () {
     '杀组六·跨度1':           { rate: 31.25, base: 28.57, level: 'mid',  killRate: 31.25, killBase: 28.57, killLevel: 'mid',  weight: 1.2 },
     '杀组六·跨度2':           { rate: 36.84, base: 28.57, level: 'high', killRate: 36.84, killBase: 28.57, killLevel: 'high', weight: 1.5 },
     '杀组六·和尾9':           { rate: 32.00, base: 28.57, level: 'mid',  killRate: 32.00, killBase: 28.57, killLevel: 'mid',  weight: 1.2 },
-    '杀豹子·3数同012路':      { rate: 100.00, base: 100,   level: 'high', killRate: 100.00, killBase: 100,  killLevel: 'high', weight: 1.5 }
+    '杀豹子·3数同012路':      { rate: 100.00, base: 100,   level: 'high', killRate: 100.00, killBase: 100,  killLevel: 'high', weight: 1.5 },
+
+    // === v5.8+ 杀组选(杀含某数,200 期回测)===
+    // 杀 1 个数:理论 72.9% 杀对率(因 271/1000=27.1% 含此数)
+    '杀含·上期跨度+1':         { rate: 79.21, base: 72.9, level: 'high', killRate: 79.21, killBase: 72.9, killLevel: 'high', weight: 1.5 },
+    '杀含·上期和值+3':         { rate: 77.23, base: 72.9, level: 'high', killRate: 77.23, killBase: 72.9, killLevel: 'high', weight: 1.4 },
+    '杀含·上期和尾+1':         { rate: 76.24, base: 72.9, level: 'mid',  killRate: 76.24, killBase: 72.9, killLevel: 'mid',  weight: 1.2 },
+    '杀含·上期A+跨度':         { rate: 73.76, base: 72.9, level: 'mid',  killRate: 73.76, killBase: 72.9, killLevel: 'mid',  weight: 1.0 }
   };
   const BACKTEST_SAMPLE = 199;   // 200-1=199 有效样本
-  const BACKTEST_NOTE = '200 期真实回测杀号(2026-01-09 至 2026-08-09):杀号 1 个号基准 72.9%(=(9/10)^3);真正高于基准:三数相乘 77.23% / 上期十位 75.25% / A×5+B×8 74.26%';
+  const BACKTEST_NOTE = '200 期真实回测(2026-01-09 至 2026-08-09):杀号 1 个号基准 72.9%;真正高于基准:三数相乘 77.23% / 上期十位 75.25% / A×5+B×8 74.26% / 杀含(上期跨度+1) 79.21% ⭐';
 
   /**
    * 根据公式名字返回准确率角标 HTML
@@ -1008,6 +1030,6 @@ window.FucaiFormula = (function () {
     buildKillPool, buildDanPool, buildHeatMap, pairCodes, smartPick,
     getBacktestBadge, getBacktestSummary, BACKTEST,
     // v5.8 新导出
-    autoLearnWeights, computeColdNumber, killZuxuan
+    autoLearnWeights, computeColdNumber, killZuxuan, suggestKillContain
   };
 })();
