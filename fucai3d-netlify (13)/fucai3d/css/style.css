@@ -1296,3 +1296,88 @@ table.history .th-hint {
   margin-left: 4px;
   font-weight: 600;
 }
+
+/* ════════════════════════════════════════════
+   v5.8 杀组选 UI 美化
+   ════════════════════════════════════════════ */
+.v58-zuxuan {
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgba(167,139,250,.08), rgba(196,181,253,.04));
+  border: 1px solid rgba(167,139,250,.25);
+  border-radius: 10px;
+  padding: 12px;
+}
+.v58-zuxuan-title {
+  font-size: 13px;
+  color: #a78bfa;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.v58-zuxuan-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.zx-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.zx-kill {
+  background: linear-gradient(135deg, rgba(255,80,96,.18), rgba(239,68,68,.12));
+  border: 1px solid rgba(255,80,96,.4);
+  color: #ff8090;
+}
+.zx-none {
+  background: rgba(110,240,158,.1);
+  border: 1px solid rgba(110,240,158,.3);
+  color: #6ef09e;
+}
+.v58-zuxuan-recommend {
+  font-size: 12px;
+  color: var(--text-2);
+  padding: 6px 8px;
+  background: rgba(0,0,0,.2);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.v58-zuxuan-triggers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.zx-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  padding: 5px 8px;
+  background: rgba(0,0,0,.15);
+  border-radius: 4px;
+  border-left: 3px solid #a78bfa;
+}
+.zx-trigger-name {
+  flex: 1;
+  color: var(--text-2);
+}
+.zx-trigger-rate {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  min-width: 50px;
+  text-align: right;
+}
+.zx-trigger-weight {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #a78bfa;
+  min-width: 35px;
+  text-align: right;
+  margin-left: 8px;
+}
