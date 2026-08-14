@@ -41,6 +41,25 @@ window.FucaiNetlifyBackend = (function () {
     return await call('admin-delete-token', 'POST', { id });
   }
 
+  // v5.8.4:删除 token 下的某个设备
+  async function removeDevice(id, fp) {
+    return await call('admin-remove-device', 'POST', { id, fp });
+  }
+
+  // v5.8.4:清空 token 下所有设备
+  async function clearAllDevices(id) {
+    const list = await listTokens();
+    const t = list.find(x => x.id === id);
+    if (!t || !t.devices) return { ok: false, reason: 'token 不存在' };
+    const fps = t.devices.map(d => d.id);
+    let removed = 0;
+    for (const fp of fps) {
+      const r = await call('admin-remove-device', 'POST', { id, fp });
+      if (r.ok) removed++;
+    }
+    return { ok: true, removed, remaining: 0 };
+  }
+
   // 检测后端是否可用(测试调一次 list)
   async function testConnection() {
     try {
@@ -53,5 +72,5 @@ window.FucaiNetlifyBackend = (function () {
     }
   }
 
-  return { verifyToken, listTokens, createToken, deleteToken, testConnection, getBase };
+  return { verifyToken, listTokens, createToken, deleteToken, testConnection, getBase, removeDevice, clearAllDevices };
 })();
