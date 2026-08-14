@@ -57,6 +57,21 @@ window.FucaiMain = (function () {
   }
   function clearUserKills() { localStorage.setItem('fucai3d_user_kills', JSON.stringify([])); }
 
+  // v5.7.14:用户反对系统杀(系统杀的真排除,用户可以否决 → 恢复成候选)
+  function getUserAntiKills() {
+    try { return JSON.parse(localStorage.getItem('fucai3d_user_anti_kills') || '[]'); }
+    catch (e) { return []; }
+  }
+  function addUserAntiKill(code) {
+    const arr = getUserAntiKills();
+    if (!arr.includes(code)) { arr.push(code); localStorage.setItem('fucai3d_user_anti_kills', JSON.stringify(arr)); }
+  }
+  function removeUserAntiKill(code) {
+    const arr = getUserAntiKills().filter(x => x !== code);
+    localStorage.setItem('fucai3d_user_anti_kills', JSON.stringify(arr));
+  }
+  function clearUserAntiKills() { localStorage.setItem('fucai3d_user_anti_kills', JSON.stringify([])); }
+
   // v5.7:选号收藏(localStorage 持久化)
   function getFavorites() {
     try { return JSON.parse(localStorage.getItem('fucai3d_favorites') || '[]'); }
@@ -438,7 +453,10 @@ window.FucaiMain = (function () {
       .map(k => k.code);
     const realExclude = new Set([...axisNums, ...shiqiweiKill]);
     const userKills = new Set(getUserKills());  // 用户手动杀号
-    const allExclude = new Set([...realExclude, ...userKills]);
+    const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀(恢复成候选)
+    // 候选 = 0-9 - 真正的排除 - 用户手动杀 + 用户从系统杀里恢复的
+    const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
+    const allExclude = new Set([...effectiveExclude, ...userKills]);
     const candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
     const restBai = [...candidates];
     const restShi = [...candidates];
@@ -465,9 +483,10 @@ window.FucaiMain = (function () {
     const excludeInfo = `排除集:axis[${axisNums.join(',')}] + 上期十位[${shiqiweiKill.join(',')}]`;
 
     // v5.7:候选号 = 可点击 → 加入我的杀号;用户杀号 = 可点击 → 恢复候选
+    // v5.7.14:系统杀的真排除 = 可点击 → 用户"反对",恢复成候选
     const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="点击 → 加入我的杀号" style="cursor:pointer;">${n}</span>`;
     const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="我的杀号,点击恢复" style="cursor:pointer;border-color:#ff5060;">${n}</span>`;
-    const realKillSpan = (n) => `<span class="opt-code killed" title="真排除(算法判定)">${n}</span>`;
+    const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="系统杀,点击 → 恢复成候选(我反对)" style="cursor:pointer;border-color:#f3c969;border-style:dashed;">${n}</span>`;
     const codeList = (arr) => arr.map(candSpan).join('') || '<span class="empty-tag">无</span>';
     const killList = (set, useMineSpan) => Array.from(set).sort().map(n => useMineSpan(n)).join('');
     const isLow = restBai.length <= 3 || restShi.length <= 3 || restGe.length <= 3;
@@ -673,8 +692,9 @@ window.FucaiMain = (function () {
         <!-- 候选预览 -->
         <div class="candidate-box">
           <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span>${excludeInfo} · 候选 = 0-9 减去排除集 · 候选号<strong>点击</strong>加入"我的杀号" · 用户杀号<strong>点击</strong>恢复</span>
+            <span>${excludeInfo} · 候选 = 0-9 - 排除 · <span style="color:#6ef09e;">候选</span>点击=杀号 · <span style="color:#ff5060;">我的杀</span>点击=恢复 · <span style="color:#f3c969;border-bottom:1px dashed #f3c969;">系统杀</span>点击=反对(恢复候选)</span>
             ${userKills.size > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我加的 ${userKills.size} 个</button>` : ''}
+            ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除我反对的 ${userAntiKills.size} 个</button>` : ''}
           </div>
           <div class="cand-col">
             <div class="cand-label">
@@ -1440,12 +1460,30 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.7.14:系统杀的真排除点击 → 恢复成候选(用户反对)
+    document.querySelectorAll('[data-anti-rm]').forEach(b => {
+      b.addEventListener('click', () => {
+        const code = +b.dataset.antiRm;
+        addUserAntiKill(code);
+        toast(`✋ ${code} 反对系统杀(恢复为候选)`);
+        switchTab('pick');
+      });
+    });
     // 清除所有我的杀号
     const ukClear = document.querySelector('[data-uk-clear]');
     if (ukClear) {
       ukClear.addEventListener('click', () => {
         clearUserKills();
         toast('↺ 已清除所有我的杀号');
+        switchTab('pick');
+      });
+    }
+    // v5.7.14:清除所有"我反对系统杀"
+    const antiClear = document.querySelector('[data-anti-clear]');
+    if (antiClear) {
+      antiClear.addEventListener('click', () => {
+        clearUserAntiKills();
+        toast('↺ 已清除所有反对');
         switchTab('pick');
       });
     }
