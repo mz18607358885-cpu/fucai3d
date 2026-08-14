@@ -4,7 +4,7 @@
 window.FucaiTokenAuth = (function () {
   const FP_KEY = 'fucai3d_my_fingerprint';
   const TOKEN_PREFIX = 'vip-';
-  const MAX_DEVICES = 3;
+  const MAX_DEVICES = 5;
   const BACKEND_KEY = 'fucai3d_backend_mode';  // 'netlify' | 'local'
 
   // 设备指纹
@@ -71,7 +71,7 @@ window.FucaiTokenAuth = (function () {
     } else {
       const known = Object.keys(visited).length;
       if (known >= MAX_DEVICES) {
-        return Promise.resolve({ ok: false, reason: '本浏览器已访问 ' + known + ' 个不同副链接,达到 3 个上限(清浏览器缓存可重置)', devices: known, maxDevices: MAX_DEVICES });
+        return Promise.resolve({ ok: false, reason: '本浏览器已访问 ' + known + ' 个不同副链接,达到 5 个上限(清浏览器缓存可重置)', devices: known, maxDevices: MAX_DEVICES });
       }
       visited[tokenId] = { id: tokenId, first: new Date().toISOString(), last: new Date().toISOString(), visits: 1, ua: (navigator.userAgent || '').substring(0, 80) };
     }
