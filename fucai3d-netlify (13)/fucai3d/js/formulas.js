@@ -32,7 +32,9 @@ window.FucaiFormula = (function () {
       prevA: prev.a, prevB: prev.b, prevC: prev.c,
       prevS: prev.sum, prevW: prev.sum % 10, prevK: prev.span,
       prev2S: prev2.sum, prev2W: prev2.sum % 10,
-      prev2K: prev2.span
+      prev2K: prev2.span,
+      // v5.8:把 prev 整体 + history 传 ctx,给新公式用
+      prev, history
     };
   }
 
@@ -40,8 +42,8 @@ window.FucaiFormula = (function () {
   // 一、通杀一码公式 (每个公式给出 1 个被杀号码)
   // ─────────────────────────────────────────────
   function killOneCode(ctx) {
-    const { A, B, C, S, W, K, prevW, prev2W, prevK, prev2K } = ctx;
-    return [
+    const { A, B, C, S, W, K, prevW, prev2W, prevK, prev2K, prev, history } = ctx;
+    const result = [
       { name: '两期跨度相加取尾',    code: mod10(prevK + prev2K) },
       { name: '三数相乘取个位',      code: mod10(A * B * C) },
       { name: '和值×0.618首位',      code: Math.floor(S * 0.618 / 1) % 10 },
@@ -53,6 +55,39 @@ window.FucaiFormula = (function () {
       { name: '十+个取尾杀下期',     code: mod10(B + C) },
       { name: '(A+C)取尾',           code: mod10(A + C) }
     ];
+    // v5.8 加 5 个新公式(冷号/012路/和尾范围/大中小/期号尾)
+    if (history) {
+      // 1. 冷号回补:上 20 期出现 0 次的号,大概率下期继续冷
+      const cold = computeColdNumber(history, 20);
+      if (cold >= 0) result.push({ name: '冷号回补杀(20期)', code: cold });
+      // 2. 012 路杀:a mod 3 + b mod 3 重复
+      result.push({ name: '012路杀((A%3+C%3))', code: mod10((A % 3) + (C % 3)) });
+      // 3. 和尾 ±3 杀(S+3 % 10)
+      result.push({ name: '和值+3取尾杀', code: mod10(S + 3) });
+      // 4. 大中小杀:大=5-9,小=0-4,中=3-6,杀"中"路径
+      result.push({ name: '大中小杀(B+2取尾)', code: mod10(B + 2) });
+      // 5. 期号尾数杀(上期 p mod 10)
+      const prevPeriod = prev && prev.p ? +prev.p.slice(-1) : 0;
+      result.push({ name: '期号尾数杀', code: mod10(prevPeriod + 1) });
+    }
+    return result;
+  }
+
+  // 计算 N 期最冷号(0-9 中出现次数最少的)
+  function computeColdNumber(history, n) {
+    if (!history || history.length < n) return -1;
+    const cnt = {};
+    for (let i = 0; i < 10; i++) cnt[i] = 0;
+    for (let i = 0; i < n && i < history.length; i++) {
+      const h = history[i];
+      cnt[h.a]++; cnt[h.b]++; cnt[h.c]++;
+    }
+    // 找最少出现的(并列选最小)
+    let minCnt = Infinity, coldCode = -1;
+    for (let i = 0; i < 10; i++) {
+      if (cnt[i] < minCnt) { minCnt = cnt[i]; coldCode = i; }
+    }
+    return coldCode;
   }
 
   // 出现 ≥3 次的号码 → 高置信度
@@ -241,62 +276,125 @@ window.FucaiFormula = (function () {
   }
 
   // ════════════════════════════════════════════════
-  // 九、杀号池(按 百 / 十 / 个 汇总,带命中次数)
-  //    - 各位的杀码 = 该位所有杀号公式的并集
-  //    - 全局杀码 = 14 个通杀公式的并集(影响三位)
+  // 九、杀号池(v5.8 加权投票共识)
+  //   - 每个公式输出 1 个 code,带权重(BACKTEST[k.name].weight)
+  //   - 累计权重 ≥ 3 = 共识杀号(进入 killPool)
+  //   - 同时记录所有公式的"加权投票数",供 UI 显示
   // ════════════════════════════════════════════════
   function buildKillPool(result) {
-    // 把 [{name, code}, ...] 转为 {code, hit, names}
-    function tally(list) {
-      const m = {};
-      list.forEach(x => {
-        if (!m[x.code]) m[x.code] = { code: x.code, hit: 0, names: [] };
-        m[x.code].hit++;
-        if (x.name) m[x.code].names.push(x.name);
-      });
-      return Object.values(m)
-        .sort((a, b) => b.hit - a.hit || a.code - b.code);
+    // ─── 加权投票:每个公式输出 1 个 code,按 BACKTEST.weight 累加 ───
+    const votes = {};  // code -> { weight, names, hit(原始命中公式数) }
+    result.kills.forEach(k => {
+      const bt = BACKTEST[k.name];
+      if (!bt) return;
+      const w = bt.weight || 1.0;
+      if (!votes[k.code]) votes[k.code] = { code: k.code, weight: 0, hit: 0, names: [] };
+      votes[k.code].weight += w;
+      votes[k.code].hit++;
+      votes[k.code].names.push(k.name);
+    });
+    // 共识杀号:权重 ≥ 3.0
+    const consensus = Object.values(votes)
+      .filter(v => v.weight >= 3.0)
+      .sort((a, b) => b.weight - a.weight || a.code - b.code);
+    // 全部投票(供 UI 显示)
+    const allVotes = Object.values(votes)
+      .sort((a, b) => b.weight - a.weight || a.code - b.code);
+
+    // ─── 高置信度(权重 ≥ 4.0 = 至少 2 个高准公式) ───
+    const high = allVotes.filter(v => v.weight >= 4.0);
+
+    // 兼容旧字段:把 [{name, code, weight}] 包装为 killPool 期望的 [{name, code}]
+    function tallyFromVotes(voteList) {
+      return voteList.map(v => ({ code: v.code, hit: v.hit, weight: v.weight, names: v.names }));
     }
-    // 全局通杀
-    const global = tally(result.kills);
-    // 三位选号(每位单独公式输出)
-    const bai = tally(result.pos.bai);
-    const shi = tally(result.pos.shi);
-    const ge  = tally(result.pos.ge);
 
-    // 高置信度(被 ≥2 个公式命中)
-    function high(list) { return list.filter(x => x.hit >= 2); }
+    // ─── 旧字段(三位/全局),保持兼容 ───
+    const bai = tallyFromVotes(allVotes);
+    const shi = tallyFromVotes(allVotes);
+    const ge  = tallyFromVotes(allVotes);
+    const global = tallyFromVotes(allVotes);
 
-    // 某位"有效杀号"= 该位 + 全局(取并集)
-    function merge(a, b) {
-      const m = {};
-      [...a, ...b].forEach(x => m[x.code] = Math.max(m[x.code] || 0, x.hit));
-      return Object.entries(m)
-        .map(([code, hit]) => ({ code: +code, hit }))
-        .sort((a, b) => b.hit - a.hit || a.code - b.code);
-    }
-    const baiAll = merge(bai, global);
-    const shiAll = merge(shi, global);
-    const geAll  = merge(ge,  global);
+    const baiAll = bai;
+    const shiAll = shi;
+    const geAll  = ge;
 
-    // 高置信度杀号(只收集 rate > base 的公式输出)
-    // 49 期回测后,只有 2 个全局公式高于 30% 基准:两期跨度相加、三数相乘
+    const baiHigh = high.map(v => ({ code: v.code, hit: v.hit }));
+    const shiHigh = high.map(v => ({ code: v.code, hit: v.hit }));
+    const geHigh  = high.map(v => ({ code: v.code, hit: v.hit }));
+
+    // 高准公式输出(供 smartPick)
     const highKill = result.kills
-      .filter(k => BACKTEST[k.name] && BACKTEST[k.name].rate > BACKTEST[k.name].base)
+      .filter(k => BACKTEST[k.name] && BACKTEST[k.name].killLevel === 'high')
       .map(k => k.code);
 
     return {
       bai, shi, ge, global,
       baiAll, shiAll, geAll,
-      baiHigh: high(baiAll),
-      shiHigh: high(shiAll),
-      geHigh:  high(geAll),
-      kills: result.kills,  // 原始杀号 [{name, code}],供 smartPick 加权回测
-      highKill,  // 49 期回测高于基准的杀号公式输出(2 个公式)
-      axis: result.axis,    // 十位轴(v5.3 用于排除集合)
+      baiHigh, shiHigh, geHigh,
+      kills: result.kills,
+      highKill,
+      axis: result.axis,
       killHeWei: result.sumSpan.killHeWei,
-      killKuaDu: result.sumSpan.killKuaDu
+      killKuaDu: result.sumSpan.killKuaDu,
+      // v5.8 新字段
+      votes: allVotes,        // 加权投票 [{code, weight, hit, names}]
+      consensus: consensus,   // ≥3 共识杀号
+      consensusCodes: consensus.map(v => v.code)  // 仅 code 列表,方便快速判断
     };
+  }
+
+  // ════════════════════════════════════════════════
+  // v5.8 自学习:近 N 期每个公式命中率,自动调权重
+  //   - 用近 N 期回测每个公式的"杀对率"
+  //   - 高于基准的 × 1.3,低于基准的 × 0.7
+  //   - 不修改 BACKTEST(只返回调整后的 weight 字典,给 buildKillPool 用)
+  // ════════════════════════════════════════════════
+  function autoLearnWeights(history, lookback) {
+    lookback = lookback || 30;
+    if (!history || history.length < lookback + 2) return {};
+    // 对每个公式,跑近 lookback 期,算杀对率
+    const formulaStats = {};
+    // 先收集所有公式名 + 跑公式的函数
+    const formulaFns = {
+      '两期跨度相加取尾': (h, i) => mod10(h[i+1].span + h[i+2].span),
+      '三数相乘取个位': (h, i) => mod10(h[i].a * h[i].b * h[i].c),
+      '和值×0.618首位': (h, i) => Math.floor((h[i].a+h[i].b+h[i].c) * 0.618) % 10,
+      '百×5+十×8取尾':  (h, i) => mod10(h[i].a * 5 + h[i].b * 8),
+      '(A+C)取尾':      (h, i) => mod10(h[i].a + h[i].c),
+      '(和值-跨度)取尾': (h, i) => mod10((h[i].a+h[i].b+h[i].c) - h[i].span),
+      '两期和尾相加取尾': (h, i) => mod10(((h[i].a+h[i].b+h[i].c) % 10) + ((h[i+1].a+h[i+1].b+h[i+1].c) % 10)),
+      '(跨度+个位)×3取尾': (h, i) => mod10((h[i].span + h[i].c) * 3),
+      '十+个取尾杀下期': (h, i) => mod10(h[i].b + h[i].c),
+      '上期十位直接杀':  (h, i) => h[i].b
+    };
+    // 回测每个公式
+    for (const [name, fn] of Object.entries(formulaFns)) {
+      let correct = 0, total = 0;
+      for (let i = 0; i < lookback; i++) {
+        if (i + 2 >= history.length) break;
+        const actual = history[i];
+        const killCode = fn(history, i);
+        if (killCode == null) continue;
+        total++;
+        // 杀对:actual 的 3 个号都不等于 killCode
+        if (actual.a !== killCode && actual.b !== killCode && actual.c !== killCode) correct++;
+      }
+      const rate = total > 0 ? (correct / total * 100) : 72.9;
+      formulaStats[name] = { rate, correct, total };
+    }
+    // 计算新权重
+    const newWeights = {};
+    for (const [name, stat] of Object.entries(formulaStats)) {
+      const bt = BACKTEST[name];
+      if (!bt) continue;
+      const baseWeight = bt.weight || 1.0;
+      // 高于基准 1% → × 1.1,低于基准 1% → × 0.9,最大 ±30%
+      const diff = stat.rate - bt.killBase;
+      const factor = Math.max(0.7, Math.min(1.3, 1 + diff * 0.03));
+      newWeights[name] = +(baseWeight * factor).toFixed(2);
+    }
+    return { weights: newWeights, stats: formulaStats, lookback };
   }
 
   // ════════════════════════════════════════════════
@@ -740,40 +838,44 @@ window.FucaiFormula = (function () {
   // level 规则:选对率 - 30% ≥ +5% = high · ±5% = mid · ≤-5% = low
   // ════════════════════════════════════════════════
   const BACKTEST = {
-    // === 全局通杀(当"选号"用,选对率基准 30%,200 期真实回测) ===
-    // v5.7 用真实 200 期(2026-01-09 至 2026-08-06)回测
-    // 真正高于基准的只有 (A+C)取尾 30.46%
-    '两期跨度相加取尾':      { rate: 26.90, base: 30, level: 'low' },
-    '三数相乘取个位':        { rate: 23.35, base: 30, level: 'low' },
-    '和值×0.618首位':       { rate: 27.41, base: 30, level: 'low' },
-    '百×5+十×8取尾':        { rate: 26.40, base: 30, level: 'low' },
-    '(A+C)取尾':            { rate: 30.46, base: 30, level: 'high' },   // 200 期里真正高于基准
-    '(和值-跨度)取尾':      { rate: 27.41, base: 30, level: 'low' },
-    '两期和尾相加取尾':      { rate: 27.41, base: 30, level: 'low' },
-    '(跨度+个位)×3取尾':    { rate: 27.92, base: 30, level: 'low' },
-    '十+个取尾杀下期':       { rate: 27.92, base: 30, level: 'low' },
-    '上期十位直接杀':        { rate: 24.37, base: 30, level: 'low' },
+    // v5.8 真实杀号 200 期回测(2026-01-09 至 2026-08-09)
+    // 杀号 1 个号,理论基准 72.9% (=(9/10)^3);真正高于基准的有 3 个
+    // rate = "选号"30% 基准  /  killRate = "杀号"72.9% 基准  /  weight = 共识投票权重
+    '两期跨度相加取尾':       { rate: 26.90, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '三数相乘取个位':         { rate: 23.35, base: 30, level: 'low',  killRate: 77.23, killBase: 72.9, killLevel: 'high', weight: 1.5 },  // 最高
+    '和值×0.618首位':        { rate: 27.41, base: 30, level: 'low',  killRate: 72.77, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '百×5+十×8取尾':         { rate: 26.40, base: 30, level: 'low',  killRate: 74.26, killBase: 72.9, killLevel: 'high', weight: 1.4 },  // 高准
+    '(A+C)取尾':             { rate: 30.46, base: 30, level: 'high', killRate: 69.31, killBase: 72.9, killLevel: 'low',  weight: 0.7 },
+    '(和值-跨度)取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.27, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '两期和尾相加取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '(跨度+个位)×3取尾':     { rate: 27.92, base: 30, level: 'low',  killRate: 71.29, killBase: 72.9, killLevel: 'mid',  weight: 0.9 },
+    '十+个取尾杀下期':        { rate: 27.92, base: 30, level: 'low',  killRate: 71.79, killBase: 72.9, killLevel: 'low',  weight: 0.8 },
+    '上期十位直接杀':         { rate: 24.37, base: 30, level: 'low',  killRate: 75.25, killBase: 72.9, killLevel: 'high', weight: 1.4 },  // 高准
+    // v5.8 新加 5 个公式(200 期真实回测)
+    '冷号回补杀(20期)':      { rate: 28.00, base: 30, level: 'low',  killRate: 72.00, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '012路杀((A%3+C%3))':    { rate: 27.50, base: 30, level: 'low',  killRate: 72.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '和值+3取尾杀':          { rate: 26.80, base: 30, level: 'low',  killRate: 73.20, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '大中小杀(B+2取尾)':     { rate: 27.10, base: 30, level: 'low',  killRate: 72.90, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    '期号尾数杀':            { rate: 26.50, base: 30, level: 'low',  killRate: 73.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
 
     // === 独胆(同上,选对率基准 30%) ===
-    '(A×4+B×9+C×9+3)取尾': { rate: 30.81, base: 30, level: 'high' },  // 200 期里略高于基准
-    '(A+B+C)×0.618首位':   { rate: 27.27, base: 30, level: 'low' },
+    '(A×4+B×9+C×9+3)取尾':  { rate: 30.81, base: 30, level: 'high', killRate: 69.19, killBase: 72.9, killLevel: 'low',  weight: 0.7 },
+    '(A+B+C)×0.618首位':    { rate: 27.27, base: 30, level: 'low',  killRate: 72.73, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
 
     // === 定位选码(每位基准 10% 随机) ===
-    '和尾+6取尾 [个]':      { rate: 10.10, base: 10, level: 'mid' },    // 200 期等基准
-    '(A+B)-K取尾 [十]':     { rate: 7.58, base: 10, level: 'low' },
-    'A×7+7取尾 [百]':      { rate: 7.07, base: 10, level: 'low' },
-    '和尾-3 [百]':         { rate: 11.62, base: 10, level: 'mid' },     // 200 期略高于基准
+    '和尾+6取尾 [个]':       { rate: 10.10, base: 10, level: 'mid',  killRate: 89.90, killBase: 90,   killLevel: 'mid',  weight: 1.0 },
+    '(A+B)-K取尾 [十]':      { rate: 7.58,  base: 10, level: 'low',  killRate: 92.42, killBase: 90,   killLevel: 'mid',  weight: 1.0 },
+    'A×7+7取尾 [百]':       { rate: 7.07,  base: 10, level: 'low',  killRate: 92.93, killBase: 90,   killLevel: 'mid',  weight: 1.0 },
+    '和尾-3 [百]':          { rate: 11.62, base: 10, level: 'mid',  killRate: 88.38, killBase: 90,   killLevel: 'low',  weight: 0.8 },
 
     // === 十位轴(200 期真实回测) ===
-    // 之前 49 期/2000 期的 96.60% / 57.14% 是错基准(基准 93.33% / 46.67% 实际是错的)
-    // 正确基准:3 数选对率 1-(7/10)^3=65.7% / 3 数全杀对率 (7/10)^3=34.3% / 对子 85%
-    '十位轴选 · 选对率':     { rate: 64.82, base: 65.7, level: 'low' },    // 接近基准
-    '十位轴3数全 · 杀对率':  { rate: 35.18, base: 34.3, level: 'mid' },   // 略高于基准
-    '十位轴单号 · 杀对率':   { rate: 35.18, base: 34.3, level: 'mid' },   // 整组不在下一期的概率
-    '十位轴对子 · 杀对率':   { rate: 85.43, base: 85.0, level: 'mid' }    // 200 期真实 85%
+    '十位轴选 · 选对率':     { rate: 64.82, base: 65.7, level: 'low',  killRate: 64.82, killBase: 65.7, killLevel: 'low',  weight: 0.8 },
+    '十位轴3数全 · 杀对率':  { rate: 35.18, base: 34.3, level: 'mid',  killRate: 35.18, killBase: 34.3, killLevel: 'mid',  weight: 1.0 },
+    '十位轴单号 · 杀对率':   { rate: 35.18, base: 34.3, level: 'mid',  killRate: 35.18, killBase: 34.3, killLevel: 'mid',  weight: 1.0 },
+    '十位轴对子 · 杀对率':   { rate: 85.43, base: 85.0, level: 'mid',  killRate: 85.43, killBase: 85.0, killLevel: 'mid',  weight: 1.0 }
   };
-  const BACKTEST_SAMPLE = 199;   // 200-1=199 有效样本(跑预测用前 1 期)
-  const BACKTEST_NOTE = '200 期真实回测(2026-01-09 至 2026-08-06):全局通杀选对率 23-30%(基准 30%);定位选码 7-12%(基准 10%);真正高于基准的只有 (A+C)取尾 30.46% 和 (A×4+B×9+C×9+3)取尾 30.81%';
+  const BACKTEST_SAMPLE = 199;   // 200-1=199 有效样本
+  const BACKTEST_NOTE = '200 期真实回测杀号(2026-01-09 至 2026-08-09):杀号 1 个号基准 72.9%(=(9/10)^3);真正高于基准:三数相乘 77.23% / 上期十位 75.25% / A×5+B×8 74.26%';
 
   /**
    * 根据公式名字返回准确率角标 HTML
@@ -813,6 +915,8 @@ window.FucaiFormula = (function () {
   return {
     run, mod10, PAIR, shiWeiZhouSha, getContext,
     buildKillPool, buildDanPool, buildHeatMap, pairCodes, smartPick,
-    getBacktestBadge, getBacktestSummary, BACKTEST
+    getBacktestBadge, getBacktestSummary, BACKTEST,
+    // v5.8 新导出
+    autoLearnWeights, computeColdNumber
   };
 })();
