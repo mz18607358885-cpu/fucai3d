@@ -680,7 +680,7 @@ window.FucaiMain = (function () {
         <div class="sub-section">
           <div class="opt-row">
             <span class="opt-mini-label">注数:</span>
-            ${countBtn(1)}${countBtn(3)}${countBtn(5)}
+            ${countBtn(1)}${countBtn(3)}${countBtn(5)}${countBtn(10)}${countBtn(20)}${countBtn(50)}
           </div>
           <div class="opt-row">
             <button class="share-btn big" id="genBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg-2);">
