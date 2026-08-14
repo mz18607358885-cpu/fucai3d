@@ -1197,3 +1197,102 @@ table.history .th-hint {
   color: #0a0e1a;
   box-shadow: 0 0 8px rgba(243, 201, 105, 0.35);
 }
+
+/* ════════════════════════════════════════════
+   v5.8 共识杀号 + 自学习 + 加权投票 美化
+   ════════════════════════════════════════════ */
+.v58-consensus {
+  background: linear-gradient(135deg, rgba(110,240,158,.08), rgba(45,212,191,.05));
+  border: 1px solid rgba(110,240,158,.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+}
+.v58-consensus-title {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.v58-consensus-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.v58-consensus-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(110,240,158,.18), rgba(45,212,191,.12));
+  border: 1px solid rgba(110,240,158,.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 0 0 8px rgba(110,240,158,.15);
+}
+.v58-consensus-code {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'Courier New', monospace;
+  min-width: 16px;
+  text-align: center;
+}
+.v58-consensus-weight {
+  font-size: 10px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.v58-consensus-stars {
+  font-size: 9px;
+  color: #fbbf24;
+}
+.v58-learn {
+  background: linear-gradient(135deg, rgba(243,201,105,.06), rgba(251,191,36,.03));
+  border: 1px solid rgba(243,201,105,.2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+.v58-learn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v58-learn-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  padding: 4px 6px;
+  background: rgba(0,0,0,.15);
+  border-radius: 4px;
+}
+.v58-learn-name {
+  color: var(--text-2);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v58-learn-rate {
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  min-width: 50px;
+  text-align: right;
+}
+.v58-learn-weight {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  min-width: 70px;
+  text-align: right;
+  margin-left: 8px;
+}
+.kill-weight {
+  font-family: 'Courier New', monospace;
+  margin-left: 4px;
+  font-weight: 600;
+}
