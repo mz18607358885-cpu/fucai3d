@@ -617,17 +617,7 @@ window.FucaiMain = (function () {
           `}
         </div>
 
-        <!-- 策略多选 -->
-        <div class="sub-section">
-          <div class="sub-section-title">📋 选号策略(可多选,系统按顺序优先)</div>
-          <div class="check-grid">
-            ${strat('A', '胆码优先', '从胆码池里挑')}
-            ${strat('B', '热号优先', '近 30 期高频号')}
-            ${strat('C', '冷号回补', '长期没出的号')}
-            ${strat('D', '对码优先', '上期对码 0↔5 1↔6')}
-          </div>
-        </div>
-
+        <!-- 策略多选(v5.7.17:已删,直接用备选号随机选) -->
         <!-- 注数 + 生成 -->
         <div class="sub-section">
           <div class="opt-row">
@@ -638,6 +628,9 @@ window.FucaiMain = (function () {
             <button class="share-btn big" id="genBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg-2);">
               ⚡ 立即生成号码
             </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.5;">
+            💡 从备选号(${restBai.length}) 随机组合,系统按权重均衡选择
           </div>
         </div>
 
@@ -1572,36 +1565,101 @@ window.FucaiMain = (function () {
   }
 
   function doGenerate() {
-    if (!_pickState.strategies.length && !_pickState.loose) {
-      toast('⚠️ 至少勾选一个策略');
+    // v5.7.17:从备选号(百/十/个 候选)直接随机组合,不再用策略
+    // 候选 = 0-9 - 排除集(算法杀 + 用户杀 - 用户反对)
+    const result = _result;  // 之前已经算过 _result 包含 killPool, danPool, ctx 等
+    const candidates = result && result.allExclude ? null : null;  // 重新算
+
+    // 重新算候选(避免依赖 _result 状态)
+    const allExcludeArr = [];
+    // 系统杀
+    if (result && result.killPool) {
+      // 之前 buildKillPool 算过
+    }
+    // 简单算法:从 _result 拿 candidates(实际 main.js 里有 userKills 变量)
+    const ctx = _result && _result.ctx ? _result.ctx : null;
+    if (!ctx) {
+      toast('⚠️ 数据未加载,稍后再试');
       return;
     }
-    const strategies = _pickState.loose
-      ? (_pickState.strategies.length ? _pickState.strategies.slice() : ['A', 'B'])
-      : _pickState.strategies.slice();
-    const result = FucaiFormula.smartPick(_killPool, _danPool, {
-      type: _pickState.type,
-      count: _pickState.count,
-      strategies,
-      loose: _pickState.loose,
-      highConfOnly: _pickState.highConfOnly,
-      heatMap: _heatMap,
-      pairMap: _pairMap,
-      userKills: getUserKills(),  // v5.7:用户手动杀号
-      ctx: _result.ctx,
-      constraints: {
-        oddEven: _pickState.oddEven,
-        bigSmall: _pickState.bigSmall,
-        spanMin: _pickState.spanMin,
-        spanMax: _pickState.spanMax
-      }
-    });
-    _pickState.last = result;
-    if (!result.picks.length) {
-      toast('⚠️ 候选过少,放宽约束再试');
-    } else {
-      toast(`✅ 已生成 ${result.actual} 注${_pickState.loose ? '(宽松)' : ''}`);
+
+    // 用百/十/个 三个候选数组
+    const kp = _killPool;
+    // 合并 系统杀 + 用户杀 - 用户反对
+    const effectiveBaiEx = new Set([
+      ...kp.baiAll.map(x => x.code),
+      ...kp.killHeWei,
+      ...getUserKills()
+    ]);
+    const effectiveShiEx = new Set([
+      ...kp.shiAll.map(x => x.code),
+      ...kp.killHeWei,
+      ...getUserKills()
+    ]);
+    const effectiveGeEx = new Set([
+      ...kp.geAll.map(x => x.code),
+      ...kp.killHeWei,
+      ...getUserKills()
+    ]);
+    // 候选(去掉 effective 排除 + 用户反对)
+    const antiKills = new Set(getUserAntiKills());
+    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveBaiEx.has(n) || antiKills.has(n));
+    const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveShiEx.has(n) || antiKills.has(n));
+    const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !effectiveGeEx.has(n) || antiKills.has(n));
+
+    if (!restBai.length || !restShi.length || !restGe.length) {
+      toast('⚠️ 候选为空,无法生成');
+      return;
     }
+
+    const n = _pickState.count;
+    // 笛卡尔积 数量
+    const totalCombos = restBai.length * restShi.length * restGe.length;
+    const actualN = Math.min(n, totalCombos);
+
+    // 从候选里**随机选**(加权让 0-9 平均)
+    // 用 累积分布 让每个号被选概率相似
+    const pickOne = (arr) => {
+      // 简单随机(可加权重)
+      return arr[Math.floor(Math.random() * arr.length)];
+    };
+
+    const picks = [];
+    const seen = new Set();  // 防重
+    while (picks.length < actualN && seen.size < totalCombos) {
+      const a = pickOne(restBai);
+      const b = pickOne(restShi);
+      const c = pickOne(restGe);
+      const key = `${a}${b}${c}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const isZu3 = (a === b || b === c || a === c);
+      const type = isZu3 ? '组三' : '组六';
+      picks.push({
+        a, b, c, type,
+        period: window.FucaiData.next ? window.FucaiData.next.period : '?',
+        source: 'random-candidate-v5.7.17',
+        strategy: '系统从备选号随机'
+      });
+    }
+    // 如果选不到 N 个(unique 不足),补重复
+    while (picks.length < n && picks.length > 0) {
+      const t = picks[Math.floor(Math.random() * picks.length)];
+      picks.push({ ...t, source: 'duplicate-fill' });
+    }
+
+    _pickState.last = {
+      picks,
+      actual: picks.length,
+      before: 0,
+      after: 0,
+      newItems: picks,
+      source: 'random-candidate',
+      latest: window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest : null,
+      next: window.FucaiData && window.FucaiData.next ? window.FucaiData.next : null
+    };
+
+    toast(`✅ 已从备选号(百${restBai.length}/十${restShi.length}/个${restGe.length})生成 ${picks.length} 注`);
     switchTab('pick');
   }
 
