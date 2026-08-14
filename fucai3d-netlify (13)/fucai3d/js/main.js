@@ -627,12 +627,15 @@ window.FucaiMain = (function () {
 
         <!-- 策略多选(v5.7.17:已删,直接用备选号随机选) -->
 
-        <!-- v5.7.20:形态/奇偶/大小/跨度(4 个折叠,默认关) -->
-        <details class="block pick-constraints" style="margin-top:10px;background:rgba(0,0,0,.2);">
-          <summary>🎛️ 形态/奇偶/大小/跨度(展开 · 不选 = 不限)</summary>
-          <div style="padding:14px;display:flex;flex-direction:column;gap:12px;">
+        <!-- v5.7.21:形态/奇偶/大小/跨度(直接显示,美化) -->
+        <div class="block pick-constraints" style="margin-top:12px;background:linear-gradient(135deg,rgba(110,240,158,.04),rgba(243,201,105,.04));border:1px solid rgba(110,240,158,.15);border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="font-size:14px;font-weight:600;color:var(--accent);">🎛️ 选号约束</span>
+            <span style="font-size:11px;color:var(--text-3);margin-left:auto;">不选 = 不限</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
             <div>
-              <div class="opt-mini-label">形态</div>
+              <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">📐 形态</div>
               <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
                 ${typeBtn('zu6', '组六')}
                 ${typeBtn('zu3', '组三')}
@@ -641,7 +644,7 @@ window.FucaiMain = (function () {
               </div>
             </div>
             <div>
-              <div class="opt-mini-label">奇偶</div>
+              <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">🔢 奇偶(百·十·个)</div>
               <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
                 ${oeBtn('ooo', '奇奇奇')}
                 ${oeBtn('eee', '偶偶偶')}
@@ -651,7 +654,7 @@ window.FucaiMain = (function () {
               </div>
             </div>
             <div>
-              <div class="opt-mini-label">大小(大=5-9,小=0-4)</div>
+              <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">📏 大小(大=5-9 · 小=0-4)</div>
               <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
                 ${bsBtn('bbb', '大大大')}
                 ${bsBtn('sss', '小小小')}
@@ -661,16 +664,16 @@ window.FucaiMain = (function () {
               </div>
             </div>
             <div>
-              <div class="opt-mini-label">跨度(0-9,点 = 选范围)</div>
+              <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <span>📊 跨度(0-9)</span>
+                <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 当前 <strong style="color:var(--dan);">${_pickState.spanMin} ~ ${_pickState.spanMax}</strong> · 点 = 选范围</span>
+              </div>
               <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
                 ${spanBtns.join('')}
               </div>
-              <div style="font-size:11px;color:var(--text-3);margin-top:4px;">
-                当前跨度范围: <strong>${_pickState.spanMin} ~ ${_pickState.spanMax}</strong> · 跨度 = max(百十个) - min(百十个)
-              </div>
             </div>
           </div>
-        </details>
+        </div>
 
         <!-- 注数 + 生成 -->
         <div class="sub-section">
