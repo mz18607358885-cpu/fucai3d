@@ -1411,11 +1411,17 @@ window.FucaiMain = (function () {
                   <div style="margin-bottom:6px;color:var(--text-2);word-break:break-all;">链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span></div>
                   <div style="color:var(--text-2);margin-bottom:6px;">已注册设备(${deviceCount}/3):</div>
                   ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
-                  ${t.devices.map(d => `<div style="padding:6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;">
-                    <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
-                    <div style="color:var(--text-2);margin-top:2px;">📱 ${d.ua || ''}</div>
-                    <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
-                    <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
+                  ${t.devices.length > 0 ? `<div style="margin-bottom:8px;text-align:right;">
+                    <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空所有设备(${t.devices.length})</button>
+                  </div>` : ''}
+                  ${t.devices.map(d => `<div style="padding:6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                    <div style="flex:1;">
+                      <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
+                      <div style="color:var(--text-2);margin-top:2px;">📱 ${d.ua || ''}</div>
+                      <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
+                      <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
+                    </div>
+                    <button class="opt-btn xs" data-tok-rm-dev="${t.id}|${d.id}" style="background:rgba(255,80,96,.2);color:#ff5060;flex-shrink:0;padding:4px 8px;" title="删除此设备">🗑</button>
                   </div>`).join('')}
                 </div>
               </div>
@@ -1453,13 +1459,19 @@ window.FucaiMain = (function () {
               <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;word-break:break-all;">
                 链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span>
               </div>
-              <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">已注册设备(${deviceCount}/3):</div>
+              <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">已注册设备(${deviceCount}/5):</div>
               ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
-              ${t.devices.map(d => `<div style="padding:5px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;">
-                <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
-                <div style="color:var(--text-2);">📱 ${d.ua || ''}</div>
-                <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
-                <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
+              ${t.devices.length > 0 ? `<div style="margin-bottom:8px;text-align:right;">
+                <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空所有设备(${t.devices.length})</button>
+              </div>` : ''}
+              ${t.devices.map(d => `<div style="padding:5px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                <div style="flex:1;">
+                  <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
+                  <div style="color:var(--text-2);">📱 ${d.ua || ''}</div>
+                  <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
+                  <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
+                </div>
+                <button class="opt-btn xs" data-tok-rm-dev="${t.id}|${d.id}" style="background:rgba(255,80,96,.2);color:#ff5060;flex-shrink:0;padding:4px 8px;" title="删除此设备">🗑</button>
               </div>`).join('')}
               <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                 <button class="opt-btn" data-tok-copy="${subURL}">📋 复制链接</button>
@@ -2256,6 +2268,53 @@ window.FucaiMain = (function () {
           const isOpen = detail.style.display !== 'none';
           detail.style.display = isOpen ? 'none' : 'block';
           b.textContent = isOpen ? '展开' : '收起';
+        }
+      });
+    });
+    // v5.8.4:删除单个设备
+    document.querySelectorAll('[data-tok-rm-dev]').forEach(b => {
+      b.addEventListener('click', async () => {
+        const data = b.dataset.tokRmDev;
+        if (!data) return;
+        const [tid, fp] = data.split('|');
+        const short = fp.length > 16 ? fp.slice(0, 16) + '...' : fp;
+        if (!confirm(`确认删除设备 ${short} ?\n该设备再次打开副链接会被视为新设备(消耗 1 个设备名额)。`)) return;
+        try {
+          if (!window.FucaiNetlifyBackend) {
+            toast('⚠️ Netlify 后端不可用');
+            return;
+          }
+          const r = await window.FucaiNetlifyBackend.removeDevice(tid, fp);
+          if (r.ok) {
+            toast(`🗑 设备已删除(剩余 ${r.remaining})`);
+            render();
+          } else {
+            toast('❌ 删除失败: ' + (r.reason || '未知'));
+          }
+        } catch (e) {
+          toast('❌ 网络错误: ' + (e.message || e));
+        }
+      });
+    });
+    // v5.8.4:清空所有设备
+    document.querySelectorAll('[data-tok-clear-devices]').forEach(b => {
+      b.addEventListener('click', async () => {
+        const tid = b.dataset.tokClearDevices;
+        if (!confirm(`确认清空副链接 ${tid} 下的所有设备?\n所有设备都需要重新验证(共消耗 N 个名额)。`)) return;
+        try {
+          if (!window.FucaiNetlifyBackend) {
+            toast('⚠️ Netlify 后端不可用');
+            return;
+          }
+          const r = await window.FucaiNetlifyBackend.clearAllDevices(tid);
+          if (r.ok) {
+            toast(`🗑 已清空 ${r.removed} 个设备`);
+            render();
+          } else {
+            toast('❌ 清空失败: ' + (r.reason || '未知'));
+          }
+        } catch (e) {
+          toast('❌ 网络错误: ' + (e.message || e));
         }
       });
     });
