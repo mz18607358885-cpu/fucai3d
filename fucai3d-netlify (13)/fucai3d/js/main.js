@@ -1328,13 +1328,13 @@ window.FucaiMain = (function () {
       <div class="block">
         <div class="block-title">🔗 副链接授权管理 <span class="badge">v5.7.7 · ${netlifyAvailable ? 'Netlify Functions 后端' : '纯本地方案'}</span></div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
-          副链接<strong style="color:var(--accent);">永久有效</strong>。<strong style="color:var(--accent);">3 台设备全局限制</strong>(所有用户浏览器总和),<strong style="color:var(--accent);">删除立即全员失效</strong>。
+          副链接<strong style="color:var(--accent);">永久有效</strong>。<strong style="color:var(--accent);">5 台设备全局限制</strong>(所有用户浏览器总和),<strong style="color:var(--accent);">删除立即全员失效</strong>。
         </div>
 
         <!-- 0️⃣ 后端状态 -->
         <div style="background:${netlifyAvailable ? 'rgba(110,240,158,.08)' : 'rgba(243,201,105,.08)'};border:1px solid ${netlifyAvailable ? 'rgba(110,240,158,.3)' : 'rgba(243,201,105,.3)'};border-radius:8px;padding:14px;margin-bottom:14px;">
           <div style="font-size:13px;color:${netlifyAvailable ? '#6ef09e' : '#f3c969'};font-weight:bold;margin-bottom:8px;">
-            ${netlifyAvailable ? '✅ Netlify Functions 后端可用(跨用户 + 真 3 台 + 真删除)' : '⚠️ Netlify Functions 不可用(用纯本地方案)'}
+            ${netlifyAvailable ? '✅ Netlify Functions 后端可用(跨用户 + 真 5 台 + 真删除)' : '⚠️ Netlify Functions 不可用(用纯本地方案)'}
           </div>
           <div style="font-size:12px;color:var(--text-2);line-height:1.6;margin-bottom:10px;">
             当前模式: <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${mode === 'local' ? '纯本地' : (netlifyAvailable ? 'Netlify' : '自动')}</code>
