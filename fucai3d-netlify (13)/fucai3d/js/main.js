@@ -530,7 +530,7 @@ window.FucaiMain = (function () {
       lastHTML = `
         <div class="pick-result">
           <div class="pick-result-title">
-            <span>🎯 已生成 ${p.actual} 注 · 策略 ${p.strategies.join('+')}</span>
+            <span>🎯 已生成 ${p.actual} 注 · 策略 ${(p.strategies || ['随机']).join('+')}</span>
             <span style="display:flex;gap:6px;">
               <button class="opt-btn small" data-copy-all="${allPicksText}" title="复制全部 5 注(空格分隔)">📋 复制</button>
               <button class="opt-btn small" data-fav-all='${JSON.stringify(p.picks).replace(/'/g, "&apos;")}' title="收藏全部 5 注到收藏夹">⭐ 收藏</button>
@@ -1655,6 +1655,7 @@ window.FucaiMain = (function () {
       after: 0,
       newItems: picks,
       source: 'random-candidate',
+      strategies: ['随机'],  // v5.7.17:UI 隐藏策略
       latest: window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest : null,
       next: window.FucaiData && window.FucaiData.next ? window.FucaiData.next : null
     };
