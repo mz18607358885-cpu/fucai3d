@@ -1373,6 +1373,45 @@ window.FucaiMain = (function () {
           <div id="newTokenBox" style="display:none;background:rgba(110,240,158,.08);border:1px solid rgba(110,240,158,.3);border-radius:8px;padding:12px;margin-top:10px;">
             <div style="font-size:13px;color:#6ef09e;margin-bottom:6px;">✅ 副链接已生成,<strong>只显示一次,记得复制</strong>:</div>
             <div id="newTokenUrl" style="font-family:monospace;background:rgba(0,0,0,.4);padding:8px;border-radius:4px;word-break:break-all;font-size:12px;color:#6ef09e;"></div>
+          </div>
+        </div>
+
+        <!-- v5.8.5:本浏览器已记忆设备 -->
+        <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:13px;color:#a78bfa;font-weight:bold;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span>🔐 本浏览器设备记忆</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:normal;">v5.8.5 · 登入过免登录</span>
+          </div>
+          ${(() => {
+            const known = (window.FucaiAuth && window.FucaiAuth.listKnownDevices) ? window.FucaiAuth.listKnownDevices() : {};
+            const list = Object.entries(known);
+            const myFp = (window.FucaiAuth && window.FucaiAuth.getMyFingerprint) ? window.FucaiAuth.getMyFingerprint() : '';
+            if (list.length === 0) {
+              return '<div style="font-size:12px;color:var(--text-3);">还没记忆任何设备(登入后自动记忆)</div>';
+            }
+            return `
+              <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">
+                当前浏览器已记忆 <b style="color:#a78bfa;">${list.length}</b> 个设备(任意一个开页面都自动登入)
+              </div>
+              <div style="max-height:160px;overflow-y:auto;">
+                ${list.map(([fp, info]) => {
+                  const isMe = fp === myFp;
+                  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;${isMe ? 'border:1px solid rgba(110,240,158,.3);' : ''}">
+                    <div style="flex:1;">
+                      <span style="color:var(--text-3);font-family:monospace;">${fp.length > 16 ? fp.slice(0,16) + '...' : fp}</span>
+                      ${isMe ? '<span style="color:#6ef09e;margin-left:6px;font-weight:bold;">← 当前</span>' : ''}
+                      <div style="color:var(--text-3);margin-top:2px;">${info.role === 'main' ? '主链接' : '副链接'} · 首次: ${new Date(info.first).toLocaleDateString('zh-CN')} · 最近: ${new Date(info.last || info.first).toLocaleDateString('zh-CN')}</div>
+                    </div>
+                    <button class="opt-btn xs" data-fp-rm="${fp}" style="background:rgba(255,80,96,.15);color:#ff5060;padding:3px 8px;">🗑</button>
+                  </div>`;
+                }).join('')}
+              </div>
+              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="opt-btn xs" id="clearAllKnown" style="background:rgba(255,80,96,.1);color:#ff5060;">🗑 清除所有设备记忆</button>
+              </div>
+            `;
+          })()}
+        </div>
             <button class="opt-btn small" id="copyNewToken" style="margin-top:8px;">📋 复制链接</button>
           </div>
         </div>
@@ -2318,6 +2357,31 @@ window.FucaiMain = (function () {
         }
       });
     });
+    // v5.8.5:删除单个设备记忆
+    document.querySelectorAll('[data-fp-rm]').forEach(b => {
+      b.addEventListener('click', () => {
+        const fp = b.dataset.fpRm;
+        if (!confirm(`删除设备 ${fp.slice(0,16)}... 的记忆?\n该设备下次打开需要重新输入密码。`)) return;
+        if (window.FucaiAuth && window.FucaiAuth.clearKnownDevice) {
+          window.FucaiAuth.clearKnownDevice(fp);
+          toast('🗑 设备记忆已删除');
+          render();
+        }
+      });
+    });
+    // v5.8.5:清除所有设备记忆
+    const clearAllKnownBtn = document.getElementById('clearAllKnown');
+    if (clearAllKnownBtn) {
+      clearAllKnownBtn.addEventListener('click', () => {
+        if (!confirm('确定清除本浏览器所有设备记忆?\n所有设备需要重新输入密码才能使用。')) return;
+        if (window.FucaiAuth && window.FucaiAuth.clearAllKnownDevices) {
+          window.FucaiAuth.clearAllKnownDevices();
+          localStorage.removeItem('fucai3d_auth');
+          toast('✅ 已清除所有设备记忆,刷新后需要重新登入');
+          setTimeout(() => render(), 500);
+        }
+      });
+    }
 
     const refreshBtn = $('refreshBtn');
     if (refreshBtn) {
