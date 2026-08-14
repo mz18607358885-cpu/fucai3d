@@ -1119,9 +1119,42 @@ window.FucaiMain = (function () {
     });
   }
   function renderAxis() {
-    const { axis, ctx } = _result;
-    return `<div class="sub-block"><div class="sub-title">🔥 十位轴杀两码</div>
-      <div style="font-size:13px;color:var(--text-2);">B=${ctx.B} → 杀掉 [${axis.axisNumbers.join(', ')}] = ${axis.killPairs.join(' / ')}</div></div>`;
+    const { axis, ctx, zuxuanKill } = _result;
+    // v5.8 杀组选 UI
+    let zuxuanHTML = '';
+    if (zuxuanKill) {
+      const status = [];
+      if (zuxuanKill.killZu3) status.push('<span class="zx-tag zx-kill">🚫 杀组三</span>');
+      if (zuxuanKill.killZu6) status.push('<span class="zx-tag zx-kill">🚫 杀组六</span>');
+      if (zuxuanKill.killBZ) status.push('<span class="zx-tag zx-kill">🚫 杀豹子</span>');
+      if (status.length === 0) status.push('<span class="zx-tag zx-none">✨ 无杀组选规则触发</span>');
+      const recommendMap = { zu3: '组三', zu6: '组六', mixed: '不限', dan: '单选' };
+      const recColor = { zu3: '#f3c969', zu6: '#6ef09e', mixed: '#888', dan: '#a78bfa' };
+      const recText = zuxuanKill.recommend || 'mixed';
+      const triggersHTML = (zuxuanKill.triggers || []).map(t => {
+        const color = t.rate >= 75 ? '#6ef09e' : (t.rate >= 50 ? '#f3c969' : '#ff5060');
+        return `<div class="zx-trigger">
+          <span class="zx-trigger-name">${t.name}</span>
+          <span class="zx-trigger-rate" style="color:${color};">${t.rate.toFixed(2)}%</span>
+          <span class="zx-trigger-weight">×${t.weight}</span>
+        </div>`;
+      }).join('');
+      zuxuanHTML = `<div class="v58-zuxuan">
+        <div class="v58-zuxuan-title">🎲 v5.8 杀组选(200 期回测)</div>
+        <div class="v58-zuxuan-status">${status.join(' ')}</div>
+        <div class="v58-zuxuan-recommend">
+          💡 建议选: <strong style="color:${recColor[recText]};">${recommendMap[recText]}</strong>
+          ${recText === 'zu6' ? '(杀组三后,720 → 720 注组六)' : ''}
+          ${recText === 'zu3' ? '(杀组六后,720 → 270 注组三)' : ''}
+        </div>
+        ${triggersHTML ? `<div class="v58-zuxuan-triggers">${triggersHTML}</div>` : ''}
+      </div>`;
+    }
+    return `<div class="sub-block">
+      <div class="sub-title">🔥 十位轴杀两码</div>
+      <div style="font-size:13px;color:var(--text-2);">B=${ctx.B} → 杀掉 [${axis.axisNumbers.join(', ')}] = ${axis.killPairs.join(' / ')}</div>
+      ${zuxuanHTML}
+    </div>`;
   }
   function renderKillOne() {
     // v5.8:加权投票 + 共识杀号
