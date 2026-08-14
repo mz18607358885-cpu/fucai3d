@@ -19,15 +19,15 @@ window.FucaiMain = (function () {
   let _btMinRate = 30;    // 高置信度角标门槛(30=基准,35/40/45/50)
   let _shareQuery = '';   // v5.7.1:副链接查询关键词
   let _pickState = {
-    type: 'zu6',
+    type: 'mixed',     // v5.7.16:系统自动选(混合)
     count: 5,
     strategies: ['A', 'B'],
-    oddEven: 'mixed',
-    bigSmall: 'mixed',
+    oddEven: 'mixed',  // 不限
+    bigSmall: 'mixed', // 不限
     spanMin: 0,
     spanMax: 9,
-    loose: false,
-    highConfOnly: true,  // 智能选号只排除"高于基准的杀号"(默认开)
+    loose: false,      // 严格
+    highConfOnly: false,  // v5.7.16:用全部公式
     last: null
   };
   // 定位复式
@@ -597,28 +597,18 @@ window.FucaiMain = (function () {
 
     return `
       <div class="block">
-        <div class="block-title">🧠 智能选号 <span class="badge">多策略 + 多约束</span></div>
+        <div class="block-title">🧠 智能选号 <span class="badge">系统自动选</span></div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
-          勾选多个策略(按顺序优先),系统会按所选<strong>形态/奇偶/大小/跨度</strong>约束过滤。生成结果仅供娱乐参考。
+          勾选策略(可多选),系统会基于最近 30 期历史自动选<strong>形态/奇偶/大小/跨度</strong>。生成结果仅供娱乐参考。
         </div>
 
-        <!-- 选号模式 + 候选数提示 -->
+        <!-- 候选数提示 -->
         <div class="mode-row">
-          <div class="mode-toggle">
-            <span class="mode-label">选号模式:</span>
-            <button class="opt-btn ${!_pickState.loose ? 'active' : ''}" data-loose="0">🔒 严格</button>
-            <button class="opt-btn ${_pickState.loose ? 'active' : ''}" data-loose="1">🔓 宽松</button>
-          </div>
-          <div class="mode-toggle">
-            <span class="mode-label">选号筛选:</span>
-            <button class="opt-btn small ${_pickState.highConfOnly ? 'active' : ''}" data-hconf="1" title="只选 49 期回测中选对率 ≥ 35% 的公式(两期跨度相加、三数相乘)">⭐ 仅高置信度</button>
-            <button class="opt-btn small ${!_pickState.highConfOnly ? 'active' : ''}" data-hconf="0" title="选所有公式输出(包括 49 期里选对率 < 30% 的公式)">📋 全部公式</button>
-          </div>
           ${isLow ? `
             <div class="candidate-warn" style="background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);">
-              <strong style="color:#ff5060;">⚠️ 候选不足 v5.6</strong><br>
-              百 ${restBai.length} / 十 ${restShi.length} / 个 ${restGe.length} — 严格模式选不到足量号码<br>
-              <span style="font-size:11px;color:var(--text-3);">建议:开启宽松模式 / 放宽约束 / 减少策略 / 删除组三限制</span>
+              <strong style="color:#ff5060;">⚠️ 候选不足</strong><br>
+              百 ${restBai.length} / 十 ${restShi.length} / 个 ${restGe.length} — 系统可选号码较少<br>
+              <span style="font-size:11px;color:var(--text-3);">建议:减少策略 / 取消杀号</span>
             </div>
           ` : `
             <div class="candidate-ok">
@@ -629,50 +619,12 @@ window.FucaiMain = (function () {
 
         <!-- 策略多选 -->
         <div class="sub-section">
-          <div class="sub-section-title">📋 选号策略(可多选,按顺序优先)</div>
+          <div class="sub-section-title">📋 选号策略(可多选,系统按顺序优先)</div>
           <div class="check-grid">
             ${strat('A', '胆码优先', '从胆码池里挑')}
             ${strat('B', '热号优先', '近 30 期高频号')}
             ${strat('C', '冷号回补', '长期没出的号')}
             ${strat('D', '对码优先', '上期对码 0↔5 1↔6')}
-          </div>
-        </div>
-
-        <!-- 形态 -->
-        <div class="sub-section">
-          <div class="sub-section-title">🎯 形态</div>
-          <div class="opt-row">
-            ${typeBtn('zu6', '组六 (3 不同)')}
-            ${typeBtn('zu3', '组三 (2 相同)')}
-            ${typeBtn('single', '直选 (含豹子)')}
-            ${typeBtn('mixed', '混合 (不约束)')}
-          </div>
-        </div>
-
-        <!-- 约束 -->
-        <div class="sub-section">
-          <div class="sub-section-title">⚖️ 约束(可叠加)</div>
-          <div class="opt-row">
-            <span class="opt-mini-label">奇偶:</span>
-            ${oeBtn('mixed', '不限')}
-            ${oeBtn('allodd', '全奇')}
-            ${oeBtn('alleven', '全偶')}
-            ${oeBtn('2odd1even', '2 奇 1 偶')}
-            ${oeBtn('2even1odd', '2 偶 1 奇')}
-          </div>
-          <div class="opt-row">
-            <span class="opt-mini-label">大小:</span>
-            ${bsBtn('mixed', '不限')}
-            ${bsBtn('allbig', '全大 (5-9)')}
-            ${bsBtn('allsmall', '全小 (0-4)')}
-            ${bsBtn('2big1small', '2 大 1 小')}
-            ${bsBtn('2small1big', '2 小 1 大')}
-          </div>
-          <div class="opt-row">
-            <span class="opt-mini-label">跨度:</span>
-            <span style="font-size:12px;color:var(--text-2);">从</span>
-            ${spanBtns.map(b => b.replace('opt-btn xs', 'opt-btn xs')).join('')}
-            <span style="font-size:12px;color:var(--text-2);">→ 当前 ${_pickState.spanMin}~${_pickState.spanMax}</span>
           </div>
         </div>
 
