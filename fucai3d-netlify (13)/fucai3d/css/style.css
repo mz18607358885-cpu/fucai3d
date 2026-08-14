@@ -1160,3 +1160,40 @@ table.history .th-hint {
   margin-left: auto;
   font-family: 'Courier New', monospace;
 }
+
+/* ════════════════════════════════════════════
+   v5.7.21: 选号约束(形态/奇偶/大小/跨度)— 美化
+   ════════════════════════════════════════════ */
+.pick-constraints .opt-mini-label {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.pick-constraints .opt-btn {
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.pick-constraints .opt-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(110, 240, 158, 0.15);
+}
+.pick-constraints .opt-btn.active {
+  background: linear-gradient(135deg, #6ef09e, #2dd4bf);
+  border-color: #6ef09e;
+  color: #0a0e1a;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(110, 240, 158, 0.4);
+}
+.pick-constraints .opt-btn.xs {
+  min-width: 32px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+.pick-constraints .opt-btn.xs.on {
+  background: linear-gradient(135deg, #f3c969, #fbbf24);
+  border-color: #f3c969;
+  color: #0a0e1a;
+  box-shadow: 0 0 8px rgba(243, 201, 105, 0.35);
+}
