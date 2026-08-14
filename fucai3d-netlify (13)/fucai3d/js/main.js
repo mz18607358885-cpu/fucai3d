@@ -29,6 +29,7 @@ window.FucaiMain = (function () {
     spanMax: 9,
     loose: false,      // 严格
     highConfOnly: false,  // v5.7.16:用全部公式
+    killContain: [],   // v5.8+:杀组选(0-9 多选,含此数的全部排除)
     last: null
   };
   // 定位复式
@@ -672,6 +673,33 @@ window.FucaiMain = (function () {
               <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
                 ${spanBtns.join('')}
               </div>
+            </div>
+            <div style="border-top:1px dashed rgba(255,255,255,.1);padding-top:12px;">
+              <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <span>🚫 杀组选(0-9,多选)</span>
+                <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 含此数的<strong>全部组三/组六</strong>都排除</span>
+              </div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
+                ${[0,1,2,3,4,5,6,7,8,9].map(n => {
+                  const checked = (_pickState.killContain || []).includes(n);
+                  return `<button class="opt-btn xs ${checked ? 'on' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : ''}">${n}</button>`;
+                }).join('')}
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px;">
+                💡 杀 1 个数:1000 → 702 注(-30%) · 杀 2 个:-54% · 杀 3 个:-73%<br>
+                ${(_pickState.killContain && _pickState.killContain.length > 0) ? `<strong style="color:#ff5060;">已选: ${_pickState.killContain.sort((a,b)=>a-b).join('、')}(共 ${_pickState.killContain.length} 个)</strong>` : '点击数字 = 加入杀组选(再次点击 = 取消)'}
+              </div>
+              ${(() => {
+                // v5.8+ 推荐(根据当前期)
+                const suggests = FucaiFormula.suggestKillContain(_result.ctx);
+                return `<div style="margin-top:8px;padding:8px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;">
+                  <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-bottom:4px;">🧠 系统推荐(200 期回测):</div>
+                  ${suggests.map(s => `<button class="opt-btn xs" data-kc-add="${s.num}" style="margin:2px;font-family:monospace;">
+                    🚫 杀 <strong style="color:#ff5060;">${s.num}</strong> · <span style="color:#a78bfa;">${s.rate}%</span>
+                  </button>`).join('')}
+                  <div style="font-size:10px;color:var(--text-3);margin-top:4px;">点推荐 = 自动加入杀组选(可叠加)</div>
+                </div>`;
+              })()}
             </div>
           </div>
         </div>
@@ -1556,6 +1584,31 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.8+ 杀组选 0-9(多选)
+    document.querySelectorAll('[data-kc]').forEach(b => {
+      b.addEventListener('click', () => {
+        const n = +b.dataset.kc;
+        if (!_pickState.killContain) _pickState.killContain = [];
+        const idx = _pickState.killContain.indexOf(n);
+        if (idx >= 0) {
+          _pickState.killContain.splice(idx, 1);  // 取消
+        } else {
+          _pickState.killContain.push(n);  // 加入
+        }
+        switchTab('pick');
+      });
+    });
+    // v5.8+ 点推荐 = 加入杀组选
+    document.querySelectorAll('[data-kc-add]').forEach(b => {
+      b.addEventListener('click', () => {
+        const n = +b.dataset.kcAdd;
+        if (!_pickState.killContain) _pickState.killContain = [];
+        if (!_pickState.killContain.includes(n)) {
+          _pickState.killContain.push(n);
+        }
+        switchTab('pick');
+      });
+    });
     // 生成
     const gen = $('genBtn');
     if (gen) gen.addEventListener('click', doGenerate);
@@ -1740,8 +1793,8 @@ window.FucaiMain = (function () {
   }
 
   function doGenerate() {
-    // v5.7.19:专业 3D 选号 — 加权 + 学习 + 去重
-    //   1. 候选 = 0-9 - 真排除(系统杀 - 用户反对) - 用户杀
+    // v5.8+:选号 — 加权 + 学习 + 去重 + 杀组选
+    //   1. 候选 = 0-9 - 真排除(系统杀 - 用户反对) - 用户杀 - 杀组选数
     //   2. 加权 = 热号 ∩ 候选 + 对码 ∩ 候选 + 默认 + 上期降权(自学习)
     //   3. 100% 唯一组合(去重),不够时用 duplicate-fill
     if (!_result || !_killPool) {
@@ -1757,12 +1810,19 @@ window.FucaiMain = (function () {
     const userKills = new Set(getUserKills());
     const userAntiKills = new Set(getUserAntiKills());
     const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
-    const allExclude = new Set([...effectiveExclude, ...userKills]);
+    // v5.8+:用户杀组选(0-9 多选)→ 含此数的所有号都排除
+    const killContainSet = new Set(_pickState.killContain || []);
+    const allExclude = new Set([...effectiveExclude, ...userKills, ...killContainSet]);
 
     // 候选 = 0-9 - allExclude
     const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
     const restShi = [...restBai];
     const restGe  = [...restBai];
+
+    // v5.8+:杀组选影响:含此数 → 选号必含 → 候选 0 个 = 选不到
+    if (killContainSet.size > 0) {
+      console.log(`[杀组选] 用户排除含数: ${[...killContainSet].sort().join(',')}(共 ${killContainSet.size} 个)`);
+    }
 
     if (!restBai.length || !restShi.length || !restGe.length) {
       toast('⚠️ 候选为空,无法生成');
