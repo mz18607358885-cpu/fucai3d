@@ -13,6 +13,7 @@ window.FucaiMain = (function () {
   let _killPool = null;
   let _danPool = null;
   let _heatMap = null;
+  let _learnStats = null;  // v5.8 自学习结果
   let _pairMap = null;
   let _activeTab = 'kill';
   let _historyRange = 30; // 历史数据 Tab 显示的期数
@@ -1123,8 +1124,89 @@ window.FucaiMain = (function () {
       <div style="font-size:13px;color:var(--text-2);">B=${ctx.B} → 杀掉 [${axis.axisNumbers.join(', ')}] = ${axis.killPairs.join(' / ')}</div></div>`;
   }
   function renderKillOne() {
-    return `<div class="sub-block"><div class="sub-title">🎯 通杀一码(10 公式 · 排名 Top 10)<span class="bt-legend">基准 30% · 49 期回测</span></div>
-      <div class="kill-grid">${_result.kills.map(k => `<div class="kill-item"><span class="formula-name">${k.name}${FucaiFormula.getBacktestBadge(k.name, _btMinRate)}</span><span class="code-badge">${k.code}</span></div>`).join('')}</div></div>`;
+    // v5.8:加权投票 + 共识杀号
+    const votes = _killPool.votes || [];
+    const consensus = _killPool.consensus || [];
+    const learnWeights = (_learnStats && _learnStats.weights) || {};
+    const learnStats = (_learnStats && _learnStats.stats) || {};
+
+    // 按权重排序(从高到低)
+    const sortedVotes = [...votes].sort((a, b) => b.weight - a.weight || a.code - b.code);
+
+    // 共识杀号块(高亮)
+    const consensusHTML = consensus.length > 0
+      ? `<div class="v58-consensus">
+          <div class="v58-consensus-title">🎯 v5.8 共识杀号(权重 ≥ 3.0,共 ${consensus.length} 个)</div>
+          <div class="v58-consensus-list">
+            ${consensus.map(v => {
+              const arrow = v.weight >= 4 ? '⭐⭐⭐' : v.weight >= 3.5 ? '⭐⭐' : '⭐';
+              return `<div class="v58-consensus-item">
+                <span class="v58-consensus-code">${v.code}</span>
+                <span class="v58-consensus-weight">权重 ${v.weight.toFixed(1)}</span>
+                <span class="v58-consensus-stars">${arrow}</span>
+              </div>`;
+            }).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:6px;">
+            💡 被 ≥3 个公式"加权共识"杀的号,杀对率 ≈72-79%(200 期回测)
+          </div>
+        </div>`
+      : '<div style="color:var(--text-3);font-size:12px;">本期待开奖,共识杀号暂未生成</div>';
+
+    // TOP 5 高准公式(按 killRate 排序)
+    const allBT = (window.FucaiFormula && window.FucaiFormula.BACKTEST) || {};
+    const top5 = Object.entries(allBT)
+      .filter(([n, b]) => b.killRate)
+      .sort((a, b) => b[1].killRate - a[1].killRate)
+      .slice(0, 5);
+
+    // 自学习(近 30 期)
+    const learnHTML = Object.keys(learnStats).length > 0
+      ? `<div class="v58-learn">
+          <div class="v58-consensus-title">🧠 自学习(近 30 期 · 自动调权重)</div>
+          <div class="v58-learn-list">
+            ${Object.entries(learnStats).slice(0, 5).map(([name, st]) => {
+              const bt = allBT[name] || {};
+              const newW = learnWeights[name] || 1.0;
+              const oldW = bt.weight || 1.0;
+              const arrow = newW > oldW ? '↑' : newW < oldW ? '↓' : '·';
+              const arrowColor = newW > oldW ? '#6ef09e' : newW < oldW ? '#ff5060' : '#888';
+              return `<div class="v58-learn-item">
+                <span class="v58-learn-name">${name}</span>
+                <span class="v58-learn-rate" style="color:${st.rate > (bt.killBase||72.9) ? '#6ef09e' : '#ff5060'};">${st.rate.toFixed(1)}%</span>
+                <span class="v58-learn-weight" style="color:${arrowColor};">${oldW}→${newW} ${arrow}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`
+      : '';
+
+    return `<div class="sub-block">
+      <div class="sub-title">🎯 v5.8 加权投票杀号<span class="bt-legend">15 公式 · 200 期回测 · 加权共识</span></div>
+      ${consensusHTML}
+      ${learnHTML}
+      <div style="margin-top:14px;font-size:12px;color:var(--text-2);font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+        <span>📊 15 个公式的"加权投票"明细</span>
+        <span style="font-size:11px;color:var(--text-3);">基准 72.9% · 200 期回测</span>
+      </div>
+      <div class="kill-grid">${sortedVotes.map(v => {
+        const allKillNames = v.names.join('+');
+        return `<div class="kill-item" style="${v.weight >= 3 ? 'border-color:rgba(110,240,158,.4);background:rgba(110,240,158,.08);' : ''}">
+          <span class="formula-name" title="${allKillNames}">${v.names[0]}${v.names.length > 1 ? ` +${v.names.length - 1}` : ''}</span>
+          <span class="code-badge" style="${v.weight >= 3 ? 'background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;' : ''}">${v.code}</span>
+          <span class="kill-weight" style="font-size:10px;color:${v.weight >= 3 ? '#6ef09e' : 'var(--text-3)'};">×${v.weight.toFixed(1)}</span>
+        </div>`;
+      }).join('')}</div>
+      <details class="block" style="margin-top:10px;background:rgba(0,0,0,.15);">
+        <summary>🏆 TOP 5 高准公式(按 200 期杀对率)</summary>
+        <div style="padding:10px;font-size:12px;">
+          ${top5.map(([n, b], i) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.06);">
+            <span><b style="color:var(--accent);">#${i+1}</b> ${n}</span>
+            <span><b style="color:#6ef09e;">${b.killRate}%</b> · 基准 ${b.killBase}% · ×${b.weight}</span>
+          </div>`).join('')}
+        </div>
+      </details>
+    </div>`;
   }
   function renderPos() {
     // 49 期回测后全部剔除,UI 不再展示该板块
@@ -1873,6 +1955,8 @@ window.FucaiMain = (function () {
       shi: FucaiFormula.pairCodes([_result.ctx.B]),
       ge:  FucaiFormula.pairCodes([_result.ctx.C])
     };
+    // v5.8:自学习 — 调权重(根据近 30 期表现)
+    _learnStats = FucaiFormula.autoLearnWeights(data.history, 30);
     window.__lastResult = _result;
 
     const app = $('app');
