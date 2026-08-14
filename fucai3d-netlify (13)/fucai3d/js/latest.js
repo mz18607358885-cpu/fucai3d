@@ -85,5 +85,11 @@
     }
   }
 
-  window.FucaiLatestLoader = { init: init };
+  async function reload() {
+    // v5.8+:轻量 reload(只 merge,不重 render)
+    // 供 setInterval 5 分钟检查新期用
+    return await init();
+  }
+
+  window.FucaiLatestLoader = { init: init, reload: reload };
 })();
