@@ -626,6 +626,52 @@ window.FucaiMain = (function () {
         </div>
 
         <!-- 策略多选(v5.7.17:已删,直接用备选号随机选) -->
+
+        <!-- v5.7.20:形态/奇偶/大小/跨度(4 个折叠,默认关) -->
+        <details class="block pick-constraints" style="margin-top:10px;background:rgba(0,0,0,.2);">
+          <summary>🎛️ 形态/奇偶/大小/跨度(展开 · 不选 = 不限)</summary>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div class="opt-mini-label">形态</div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
+                ${typeBtn('zu6', '组六')}
+                ${typeBtn('zu3', '组三')}
+                ${typeBtn('dan', '单选')}
+                ${typeBtn('mixed', '混合')}
+              </div>
+            </div>
+            <div>
+              <div class="opt-mini-label">奇偶</div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
+                ${oeBtn('ooo', '奇奇奇')}
+                ${oeBtn('eee', '偶偶偶')}
+                ${oeBtn('ooe', '奇奇偶')}
+                ${oeBtn('eeo', '偶偶奇')}
+                ${oeBtn('mixed', '不限')}
+              </div>
+            </div>
+            <div>
+              <div class="opt-mini-label">大小(大=5-9,小=0-4)</div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:6px;">
+                ${bsBtn('bbb', '大大大')}
+                ${bsBtn('sss', '小小小')}
+                ${bsBtn('bbs', '大大小')}
+                ${bsBtn('ssb', '小小大')}
+                ${bsBtn('mixed', '不限')}
+              </div>
+            </div>
+            <div>
+              <div class="opt-mini-label">跨度(0-9,点 = 选范围)</div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
+                ${spanBtns.join('')}
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px;">
+                当前跨度范围: <strong>${_pickState.spanMin} ~ ${_pickState.spanMax}</strong> · 跨度 = max(百十个) - min(百十个)
+              </div>
+            </div>
+          </div>
+        </details>
+
         <!-- 注数 + 生成 -->
         <div class="sub-section">
           <div class="opt-row">
@@ -1662,6 +1708,36 @@ window.FucaiMain = (function () {
       return weighted[weighted.length - 1].code;
     }
 
+    // v5.7.20:4 个约束检查(形态/奇偶/大小/跨度)
+    function checkConstraints(a, b, c) {
+      // 形态
+      const isZu3 = (a === b || b === c || a === c);
+      if (_pickState.type === 'zu6' && isZu3) return false;
+      if (_pickState.type === 'zu3' && !isZu3) return false;
+      // 'dan' 和 'mixed' 不限制
+      // 奇偶
+      if (_pickState.oddEven !== 'mixed') {
+        const map = { o: n => n % 2 === 1, e: n => n % 2 === 0 };
+        const want = _pickState.oddEven;  // 'ooo' / 'eee' / 'ooe' / 'eeo'
+        const [w1, w2, w3] = want.split('');
+        if (!map[w1](a) || !map[w2](b) || !map[w3](c)) return false;
+      }
+      // 大小
+      if (_pickState.bigSmall !== 'mixed') {
+        const map = { b: n => n >= 5, s: n => n <= 4 };
+        const want = _pickState.bigSmall;  // 'bbb' / 'sss' / 'bbs' / 'ssb'
+        const [w1, w2, w3] = want.split('');
+        if (!map[w1](a) || !map[w2](b) || !map[w3](c)) return false;
+      }
+      // 跨度
+      const span = Math.max(a, b, c) - Math.min(a, b, c);
+      if (span < _pickState.spanMin || span > _pickState.spanMax) return false;
+      return true;
+    }
+    function getTypeText(a, b, c) {
+      return (a === b || b === c || a === c) ? '组三' : '组六';
+    }
+
     const n = _pickState.count;
     const totalCombos = restBai.length * restShi.length * restGe.length;
     const actualN = Math.min(n, totalCombos);
@@ -1669,16 +1745,26 @@ window.FucaiMain = (function () {
     const picks = [];
     const seen = new Set();
     let safety = 0;
-    while (picks.length < actualN && seen.size < totalCombos && safety < 10000) {
+    let skipByConstraint = 0;
+    while (picks.length < actualN && seen.size < totalCombos && safety < 50000) {
       safety++;
       const a = pickWeighted(wBai);
       const b = pickWeighted(wShi);
       const c = pickWeighted(wGe);
       const key = `${a}${b}${c}`;
       if (seen.has(key)) continue;
+      // 检查 4 个约束
+      if (!checkConstraints(a, b, c)) {
+        skipByConstraint++;
+        // 限制太多直接放弃
+        if (skipByConstraint > 2000 && picks.length === 0) {
+          toast('⚠️ 约束太严,放宽后重试');
+          return;
+        }
+        continue;
+      }
       seen.add(key);
-      const isZu3 = (a === b || b === c || a === c);
-      const type = isZu3 ? '组三' : '组六';
+      const type = getTypeText(a, b, c);
       // 描述(为什么选这注)
       const desc = [];
       if (hotBoth.has(a) || hot4Only.has(a)) desc.push(`百${a}热`);
@@ -1692,7 +1778,7 @@ window.FucaiMain = (function () {
       picks.push({
         a, b, c, type, reason,
         period: window.FucaiData.next ? window.FucaiData.next.period : '?',
-        source: 'weighted-v5.7.19'
+        source: 'weighted-v5.7.20'
       });
     }
 
@@ -1716,8 +1802,8 @@ window.FucaiMain = (function () {
       before: 0,
       after: 0,
       newItems: picks,
-      source: 'weighted-v5.7.19',
-      strategies: ['大数据加权'],
+      source: 'weighted-v5.7.20',
+      strategies: ['加权+约束'],
       latest: window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest : null,
       next: window.FucaiData && window.FucaiData.next ? window.FucaiData.next : null
     };
