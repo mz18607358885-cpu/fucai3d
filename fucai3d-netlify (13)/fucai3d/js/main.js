@@ -1663,9 +1663,18 @@ window.FucaiMain = (function () {
   }
 
   // v5.8.9:展开 token 时实时更新 detail summary(从 globalMap 重算)
-  function refreshTokenDetailSummary(tid) {
+  async function refreshTokenDetailSummary(tid) {
     const summary = document.querySelector(`[data-detail-summary="${tid}"]`);
     if (!summary) return;
+    // v5.8.9 fix:如果 globalMap 还没加载,主动加载(不阻塞)
+    if (!window.__globalDevicesMap && window.FucaiNetlifyBackend) {
+      try {
+        window.__globalDevicesMap = await window.FucaiNetlifyBackend.listGlobalDevices();
+      } catch (e) {
+        summary.innerHTML = '<span style="color:#ff5060;">❌ 加载全局设备失败</span>';
+        return;
+      }
+    }
     const globalMap = window.__globalDevicesMap || {};
     const globalCount = Object.keys(globalMap).length;
     const globalMax = 5;
@@ -1677,9 +1686,31 @@ window.FucaiMain = (function () {
     const tokenDeviceCount = t.devices.length;
     const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
     const orphanFpInToken = tokenDeviceCount - activeFpInToken;
+    // v5.8.9:加"真实状态"显示
+    let status = '';
+    if (tokenDeviceCount === 0) {
+      status = '<span style="color:#888;">⚪ 从未有人登入</span>';
+    } else if (activeFpInToken > 0) {
+      const lastVisit = Math.max(...(t.devices || []).map(d => new Date(d.last).getTime()));
+      const ago = formatAgo(new Date(lastVisit));
+      status = `<span style="color:#6ef09e;">🟢 有人在用</span> · 最近: <span style="color:#f3c969;">${ago}</span>`;
+    } else {
+      status = '<span style="color:#ff5060;">🔴 已被全局清掉(失效)</span>';
+    }
     summary.innerHTML = `
-      本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken} 个(全局已清)</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+        <div>${status}</div>
+        <div>本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken}</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b></div>
+      </div>
     `;
+  }
+  // 辅助:把时间转"X 分钟前"
+  function formatAgo(d) {
+    const ms = Date.now() - d.getTime();
+    if (ms < 60000) return '刚刚';
+    if (ms < 3600000) return Math.floor(ms / 60000) + ' 分钟前';
+    if (ms < 86400000) return Math.floor(ms / 3600000) + ' 小时前';
+    return Math.floor(ms / 86400000) + ' 天前';
   }
 
   // v5.7.2:查询结果渲染(独立查询区)
