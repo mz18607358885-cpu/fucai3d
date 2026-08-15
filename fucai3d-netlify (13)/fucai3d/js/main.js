@@ -1636,7 +1636,25 @@ window.FucaiMain = (function () {
                 <div data-tok-detail="${t.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);font-size:12px;">
                   <div style="margin-bottom:6px;color:var(--text-2);word-break:break-all;">链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span></div>
                   <div data-detail-summary="${t.id}" style="color:var(--text-2);margin-bottom:6px;">
-                    <span class="detail-loading" style="color:var(--text-3);">⏳ 加载全局设备中...</span>
+                    ${(() => {
+                      // v5.8.9 fix:inline 立即算 status(不等异步)
+                      const m = window.__globalDevicesMap || {};
+                      const gc = Object.keys(m).length;
+                      const sc = gc >= 5 ? '#ff5060' : (gc >= 3 ? '#f3c969' : '#6ef09e');
+                      if (tokenDeviceCount === 0) {
+                        return '<span style="color:#888;">⚪ 从未有人登入</span> · 全局 <b style="color:' + sc + ';">' + gc + '/' + globalMax + '</b>';
+                      }
+                      const afi = (t.devices || []).filter(d => m[d.id]).length;
+                      const ofi = tokenDeviceCount - afi;
+                      let s = '';
+                      if (afi > 0) {
+                        const lv = Math.max(...(t.devices || []).map(d => new Date(d.last).getTime()));
+                        s = '<span style="color:#6ef09e;">🟢 有人在用</span> · 最近: <span style="color:#f3c969;">' + formatAgo(new Date(lv)) + '</span>';
+                      } else {
+                        s = '<span style="color:#ff5060;">🔴 已被全局清掉(失效)</span>';
+                      }
+                      return '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><div>' + s + '</div><div>本 token 设备(<b style="color:#6ef09e;">活跃 ' + afi + '</b>' + (ofi > 0 ? ' · <span style="color:#ff5060;">失效 ' + ofi + '</span>' : '') + ') · 全局 <b style="color:' + sc + ';">' + gc + '/' + globalMax + '</b></div></div>';
+                    })()}
                   </div>
                   <div class="detail-devices" data-detail-devices="${t.id}">
                     ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
