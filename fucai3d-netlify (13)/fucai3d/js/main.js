@@ -1635,22 +1635,24 @@ window.FucaiMain = (function () {
                 </div>
                 <div data-tok-detail="${t.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);font-size:12px;">
                   <div style="margin-bottom:6px;color:var(--text-2);word-break:break-all;">链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span></div>
-                  <div style="color:var(--text-2);margin-bottom:6px;">
-                    本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken} 个(全局已清)</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b>
+                  <div data-detail-summary="${t.id}" style="color:var(--text-2);margin-bottom:6px;">
+                    <span class="detail-loading" style="color:var(--text-3);">⏳ 加载全局设备中...</span>
                   </div>
-                  ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
-                  ${t.devices.length > 0 ? `<div style="margin-bottom:8px;text-align:right;">
-                    <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空 token 设备记录(${t.devices.length})</button>
-                  </div>` : ''}
-                  ${t.devices.map(d => `<div style="padding:6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-                    <div style="flex:1;">
-                      <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
-                      <div style="color:var(--text-2);margin-top:2px;">📱 ${d.ua || ''}</div>
-                      <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
-                      <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
-                    </div>
-                    <button class="opt-btn xs" data-tok-rm-dev="${t.id}|${d.id}" style="background:rgba(255,80,96,.2);color:#ff5060;flex-shrink:0;padding:4px 8px;" title="删除此设备">🗑</button>
-                  </div>`).join('')}
+                  <div class="detail-devices" data-detail-devices="${t.id}">
+                    ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
+                    ${t.devices.length > 0 ? `<div style="margin-bottom:8px;text-align:right;">
+                      <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空 token 设备记录(${t.devices.length})</button>
+                    </div>` : ''}
+                    ${t.devices.map(d => `<div style="padding:6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                      <div style="flex:1;">
+                        <div style="color:var(--text-3);font-family:monospace;">${d.id}</div>
+                        <div style="color:var(--text-2);margin-top:2px;">📱 ${d.ua || ''}</div>
+                        <div style="color:var(--text-3);">首次: ${new Date(d.first).toLocaleString('zh-CN')}</div>
+                        <div style="color:var(--text-3);">最近: ${new Date(d.last).toLocaleString('zh-CN')} · 访问 ${d.visits || 1} 次</div>
+                      </div>
+                      <button class="opt-btn xs" data-tok-rm-dev="${t.id}|${d.id}" style="background:rgba(255,80,96,.2);color:#ff5060;flex-shrink:0;padding:4px 8px;" title="删除此设备">🗑</button>
+                    </div>`).join('')}
+                  </div>
                 </div>
               </div>
             `;
@@ -1660,8 +1662,25 @@ window.FucaiMain = (function () {
     `;
   }
 
-  // v5.7.2:查询结果渲染(独立查询区)
-  function renderQueryResult(results, query) {
+  // v5.8.9:展开 token 时实时更新 detail summary(从 globalMap 重算)
+  function refreshTokenDetailSummary(tid) {
+    const summary = document.querySelector(`[data-detail-summary="${tid}"]`);
+    if (!summary) return;
+    const globalMap = window.__globalDevicesMap || {};
+    const globalCount = Object.keys(globalMap).length;
+    const globalMax = 5;
+    const statusColor = globalCount >= 5 ? '#ff5060' : (globalCount >= 3 ? '#f3c969' : '#6ef09e');
+    // 找 token 设备
+    const allTokens = window.FucaiTokenAuth.listTokens() || [];
+    const t = allTokens.find(x => x.id === tid);
+    if (!t) return;
+    const tokenDeviceCount = t.devices.length;
+    const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
+    const orphanFpInToken = tokenDeviceCount - activeFpInToken;
+    summary.innerHTML = `
+      本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken} 个(全局已清)</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b>
+    `;
+  }
     if (results.length === 0) {
       return `
         <div style="background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);border-radius:8px;padding:12px;color:#ff5060;font-size:13px;">
@@ -1701,6 +1720,44 @@ window.FucaiMain = (function () {
                 </div>
                 <button class="opt-btn xs" data-tok-rm-dev="${t.id}|${d.id}" style="background:rgba(255,80,96,.2);color:#ff5060;flex-shrink:0;padding:4px 8px;" title="删除此设备">🗑</button>
               </div>`).join('')}
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button class="opt-btn" data-tok-copy="${subURL}">📋 复制链接</button>
+                <button class="opt-btn" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑 删除此副链接</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // v5.7.2:查询结果渲染(独立查询区)
+  function renderQueryResult(results, query) {
+    if (results.length === 0) {
+      return `
+        <div style="background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);border-radius:8px;padding:12px;color:#ff5060;font-size:13px;">
+          ❌ 没找到 token 包含 "<strong>${query.replace(/</g, '&lt;')}</strong>"
+        </div>
+      `;
+    }
+    return `
+      <div style="background:rgba(110,240,158,.08);border:1px solid rgba(110,240,158,.3);border-radius:8px;padding:12px;">
+        <div style="font-size:13px;color:#6ef09e;margin-bottom:10px;">✅ 找到 ${results.length} 个匹配的 token:</div>
+        ${results.map(t => {
+          const subURL = window.FucaiTokenAuth.makeSubUrl(t.id);
+          const deviceCount = t.devices.length;
+          const usageClass = deviceCount >= 5 ? 'rgba(255,80,96,.2)' : (deviceCount >= 3 ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
+          return `
+            <div style="background:rgba(0,0,0,.3);border-radius:6px;padding:10px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <span style="font-family:monospace;font-size:14px;color:#6ef09e;font-weight:bold;">${t.id}</span>
+                <span style="font-size:11px;background:rgba(110,240,158,.3);color:#6ef09e;padding:2px 6px;border-radius:4px;">永久有效</span>
+                <span style="font-size:11px;color:var(--text-3);">${new Date(t.created).toLocaleDateString()}</span>
+                <span style="font-size:12px;background:${usageClass};color:var(--text-1);padding:3px 8px;border-radius:4px;margin-left:auto;">📱 ${deviceCount} / 5</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;word-break:break-all;">
+                链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span>
+              </div>
               <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                 <button class="opt-btn" data-tok-copy="${subURL}">📋 复制链接</button>
                 <button class="opt-btn" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑 删除此副链接</button>
@@ -2555,6 +2612,10 @@ window.FucaiMain = (function () {
           const isOpen = detail.style.display !== 'none';
           detail.style.display = isOpen ? 'none' : 'block';
           b.textContent = isOpen ? '展开' : '收起';
+          if (!isOpen) {
+            // v5.8.9:展开时实时从 globalDevicesMap 算 summary
+            refreshTokenDetailSummary(tid);
+          }
         }
       });
     });
