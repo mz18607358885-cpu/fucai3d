@@ -62,9 +62,27 @@
         d: newest.d, sum: newest.sum, span: newest.span, type: newest.type
       };
     }
-    if (window.FucaiData.next) {
+    if (window.FucaiData.next && window.FucaiData.latest) {
       const nextP = String(Number(window.FucaiData.latest.p) + 1);
       window.FucaiData.next.p = nextP;
+      // v5.8.8:同时更新 next.drawTime(基于最新期日期 +1 天 21:15)
+      //   3D 每天 21:15 开奖(中国福利彩票)
+      //   北京时间(UTC+8)
+      try {
+        const lastDate = window.FucaiData.latest.d;  // 形如 "2026-08-14"
+        if (lastDate && /^\d{4}-\d{2}-\d{2}$/.test(lastDate)) {
+          const [y, m, d] = lastDate.split('-').map(Number);
+          const next = new Date(Date.UTC(y, m - 1, d + 1, 13, 15, 0));  // UTC 13:15 = 北京 21:15
+          const pad = n => String(n).padStart(2, '0');
+          const nextDraw = next.getUTCFullYear() + '-' +
+                           pad(next.getUTCMonth() + 1) + '-' +
+                           pad(next.getUTCDate()) + ' 21:15:00';
+          window.FucaiData.next.drawTime = nextDraw;
+          window.FucaiData.next.drawDate = lastDate;
+        }
+      } catch (e) {
+        console.warn('[latest.js] 更新 drawTime 失败:', e);
+      }
     }
     return merged;
   }
