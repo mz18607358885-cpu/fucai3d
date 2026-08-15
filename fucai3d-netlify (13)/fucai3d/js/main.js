@@ -75,6 +75,61 @@ window.FucaiMain = (function () {
   function clearUserAntiKills() { localStorage.setItem('fucai3d_user_anti_kills', JSON.stringify([])); }
 
   // v5.7:选号收藏(localStorage 持久化)
+  // v5.8.6:加载全局设备列表(主链接管理界面用)
+  async function loadGlobalDevices() {
+    const box = $('globalDevicesList');
+    if (!box) return;
+    box.textContent = '加载中...';
+    try {
+      if (!window.FucaiNetlifyBackend) {
+        box.innerHTML = '<div style="color:var(--text-3);">⚠️ Netlify 后端不可用</div>';
+        return;
+      }
+      const map = await window.FucaiNetlifyBackend.listGlobalDevices();
+      const list = Object.entries(map).sort((a, b) => (b[1].last || b[1].first).localeCompare(a[1].last || a[1].first));
+      if (list.length === 0) {
+        box.innerHTML = '<div style="color:var(--text-3);">还没有任何设备登入(等人开副链接就显示)</div>';
+        return;
+      }
+      box.innerHTML = `
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">
+          总共 <b style="color:#f3c969;">${list.length} / 5</b> 台设备(1 浏览器 = 1 设备,跨所有副链接共享)
+        </div>
+        <div style="max-height:200px;overflow-y:auto;">
+          ${list.map(([fp, info]) => {
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;">
+              <div style="flex:1;">
+                <div style="color:var(--text-3);font-family:monospace;">${fp}</div>
+                <div style="color:var(--text-3);margin-top:2px;">首次: ${new Date(info.first).toLocaleString('zh-CN')} · 最近: ${new Date(info.last || info.first).toLocaleString('zh-CN')}</div>
+              </div>
+              <button class="opt-btn xs" data-gd-rm="${fp}" style="background:rgba(255,80,96,.15);color:#ff5060;padding:3px 8px;" title="删除此全局设备(同时清所有 token 里的对应记录)">🗑</button>
+            </div>`;
+          }).join('')}
+        </div>
+      `;
+      // 绑定删除按钮
+      document.querySelectorAll('[data-gd-rm]').forEach(b => {
+        b.addEventListener('click', async () => {
+          const fp = b.dataset.gdRm;
+          if (!confirm(`删除全局设备 ${fp}?\n该设备开任何副链接都需要重新登入(消耗 1 个新设备名额)。`)) return;
+          try {
+            const r = await window.FucaiNetlifyBackend.removeGlobalDevice(fp);
+            if (r.ok) {
+              toast(`🗑 全局设备已删除(清理了 ${r.tokensCleaned} 个 token)`);
+              loadGlobalDevices();
+            } else {
+              toast('❌ 删除失败: ' + (r.reason || '未知'));
+            }
+          } catch (e) {
+            toast('❌ 网络错误: ' + (e.message || e));
+          }
+        });
+      });
+    } catch (e) {
+      box.innerHTML = '<div style="color:#ff5060;">❌ 加载失败: ' + (e.message || e) + '</div>';
+    }
+  }
+
   function getFavorites() {
     try { return JSON.parse(localStorage.getItem('fucai3d_favorites') || '[]'); }
     catch (e) { return []; }
@@ -1412,6 +1467,15 @@ window.FucaiMain = (function () {
             `;
           })()}
         </div>
+
+        <!-- v5.8.6:全局设备(跨 token 共享) -->
+        <div id="globalDevicesBox" style="background:rgba(243,201,105,.06);border:1px solid rgba(243,201,105,.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:13px;color:#f3c969;font-weight:bold;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span>🌐 全局设备(1 浏览器 = 1 设备 · 跨所有副链接)</span>
+            <button class="opt-btn xs" id="refreshGlobalDevices" style="font-size:10px;padding:2px 8px;">🔄 刷新</button>
+          </div>
+          <div id="globalDevicesList" style="font-size:12px;color:var(--text-3);">加载中...</div>
+        </div>
             <button class="opt-btn small" id="copyNewToken" style="margin-top:8px;">📋 复制链接</button>
           </div>
         </div>
@@ -2139,6 +2203,9 @@ window.FucaiMain = (function () {
     bindTheme();
     bindTabs();
     bindBtSelector();
+
+    // v5.8.6:加载全局设备列表(跨 token 共享)
+    loadGlobalDevices();
     switchTab(_activeTab);
 
     FucaiCountdown.start(info => {
@@ -2380,6 +2447,14 @@ window.FucaiMain = (function () {
           toast('✅ 已清除所有设备记忆,刷新后需要重新登入');
           setTimeout(() => render(), 500);
         }
+      });
+    }
+    // v5.8.6:刷新全局设备列表
+    const refreshGlobalBtn = document.getElementById('refreshGlobalDevices');
+    if (refreshGlobalBtn) {
+      refreshGlobalBtn.addEventListener('click', () => {
+        loadGlobalDevices();
+        toast('🔄 已刷新');
       });
     }
 
