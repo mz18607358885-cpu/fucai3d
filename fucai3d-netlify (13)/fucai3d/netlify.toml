@@ -40,6 +40,12 @@
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
+# latest.js no-cache(v5.8.8:重要 — 改 next.drawTime 等逻辑必须立刻生效)
+[[headers]]
+  for = "/js/latest.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
 # latest.json no-cache
 [[headers]]
   for = "/latest.json"
