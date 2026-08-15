@@ -78,15 +78,24 @@ window.FucaiMain = (function () {
   // v5.8.6:加载全局设备列表(主链接管理界面用)
   async function loadGlobalDevices() {
     const box = $('globalDevicesList');
+    const summary = $('globalDeviceSummary');
     if (!box) return;
     box.textContent = '加载中...';
     try {
       if (!window.FucaiNetlifyBackend) {
         box.innerHTML = '<div style="color:var(--text-3);">⚠️ Netlify 后端不可用</div>';
+        if (summary) summary.textContent = '⚠️ 后端不可用';
         return;
       }
       const map = await window.FucaiNetlifyBackend.listGlobalDevices();
+      window.__globalDevicesMap = map;  // v5.8.6:存全局,token 列表用
       const list = Object.entries(map).sort((a, b) => (b[1].last || b[1].first).localeCompare(a[1].last || a[1].first));
+      // 顶部摘要
+      if (summary) {
+        const count = list.length;
+        const color = count >= 5 ? '#ff5060' : (count >= 3 ? '#f3c969' : '#6ef09e');
+        summary.innerHTML = `🌐 全局 <b style="color:${color};">${count}/5</b> 设备${count >= 5 ? ' · <span style="color:#ff5060;">已满</span>' : (count >= 3 ? ' · 快满' : '')}`;
+      }
       if (list.length === 0) {
         box.innerHTML = '<div style="color:var(--text-3);">还没有任何设备登入(等人开副链接就显示)</div>';
         return;
@@ -125,6 +134,69 @@ window.FucaiMain = (function () {
           }
         });
       });
+      // v5.8.6:重新渲染 token 列表(让状态/计数同步)
+      const tokenList = $('tokenList');
+      if (tokenList && typeof renderShareBox === 'function') {
+        // 用最新的 token 数据 + 全局 map 重渲染
+        const newList = window.FucaiTokenAuth.listTokens() || [];
+        const listHTML = newList.map(t => {
+          const subURL = window.FucaiTokenAuth.makeSubUrl(t.id);
+          const tokenDeviceCount = t.devices.length;
+          const globalMap = window.__globalDevicesMap || {};
+          const globalCount = Object.keys(globalMap).length;
+          const globalMax = 5;
+          const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
+          const orphanFpInToken = tokenDeviceCount - activeFpInToken;
+          const status = globalCount >= 5 ? 'full' : (globalCount >= 3 ? 'warn' : 'ok');
+          const statusEmoji = { ok: '🟢', warn: '🟡', full: '🔴' }[status];
+          const statusColor = { ok: '#6ef09e', warn: '#f3c969', full: '#ff5060' }[status];
+          const usageClass = status === 'full' ? 'rgba(255,80,96,.2)' : (status === 'warn' ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
+          // 简版:只刷 row 头部(状态 + 计数)
+          const row = document.querySelector(`[data-tid="${t.id}"] > div:first-child`);
+          if (row) {
+            row.innerHTML = `
+              <span title="状态: ${status === 'ok' ? '正常' : (status === 'warn' ? '快满' : '已满')}" style="font-size:14px;">${statusEmoji}</span>
+              <span style="font-family:monospace;font-size:13px;color:#6ef09e;font-weight:bold;">${t.id}</span>
+              <span style="font-size:11px;background:rgba(110,240,158,.3);color:#6ef09e;padding:2px 6px;border-radius:4px;">永久</span>
+              <span style="font-size:11px;color:var(--text-3);">${new Date(t.created).toLocaleDateString()}</span>
+              <span title="全局 ${globalCount}/${globalMax} · 本 token ${tokenDeviceCount}" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">🌐 ${globalCount}/${globalMax}</span>
+              <button class="opt-btn xs" data-tok-expand="${t.id}">展开</button>
+              <button class="opt-btn xs" data-tok-copy="${subURL}">📋</button>
+              <button class="opt-btn xs" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑</button>
+            `;
+            // 重新绑定 row 里的按钮
+            row.querySelectorAll('[data-tok-expand],[data-tok-copy],[data-tok-del]').forEach(btn => {
+              if (btn.dataset.bound) return;
+              btn.dataset.bound = '1';
+              if (btn.dataset.tokExpand) {
+                btn.addEventListener('click', () => {
+                  const detail = document.querySelector(`[data-tok-detail="${btn.dataset.tokExpand}"]`);
+                  if (detail) {
+                    const isOpen = detail.style.display !== 'none';
+                    detail.style.display = isOpen ? 'none' : 'block';
+                    btn.textContent = isOpen ? '展开' : '收起';
+                  }
+                });
+              }
+              if (btn.dataset.tokCopy) {
+                btn.addEventListener('click', () => {
+                  navigator.clipboard.writeText(btn.dataset.tokCopy).then(() => toast('📋 已复制'));
+                });
+              }
+              if (btn.dataset.tokDel) {
+                btn.addEventListener('click', () => {
+                  const tid = btn.dataset.tokDel;
+                  if (confirm(`确认删除副链接 ${tid} ?\n删除后,持有该链接的人将无法访问系统。`)) {
+                    window.FucaiTokenAuth.deleteToken(tid);
+                    toast('🗑 副链接已删除');
+                    render();
+                  }
+                });
+              }
+            });
+          }
+        }).filter(Boolean).join('');
+      }
     } catch (e) {
       box.innerHTML = '<div style="color:#ff5060;">❌ 加载失败: ' + (e.message || e) + '</div>';
     }
@@ -1492,30 +1564,47 @@ window.FucaiMain = (function () {
         </div>
 
         <!-- ③ 列表区(所有 token) -->
-        <div style="font-size:13px;color:var(--text-1);font-weight:bold;margin-bottom:8px;">③ 所有副链接(${allTokens.length} 个)</div>
+        <div style="font-size:13px;color:var(--text-1);font-weight:bold;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <span>③ 所有副链接(${allTokens.length} 个)</span>
+          <span id="globalDeviceSummary" style="font-size:11px;color:var(--text-3);font-weight:normal;">🌐 全局设备加载中...</span>
+        </div>
         ${allTokens.length === 0 ? '<div style="text-align:center;color:var(--text-3);font-size:12px;padding:14px;">还没生成副链接 ↑</div>' : ''}
         <div id="tokenList">
           ${allTokens.map(t => {
             const subURL = window.FucaiTokenAuth.makeSubUrl(t.id);
-            const deviceCount = t.devices.length;
-            const usageClass = deviceCount >= 5 ? 'rgba(255,80,96,.2)' : (deviceCount >= 3 ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
+            const tokenDeviceCount = t.devices.length;  // 本 token 设备数
+            // v5.8.6:状态分类(基于全局设备)
+            const globalMap = window.__globalDevicesMap || {};
+            const globalCount = Object.keys(globalMap).length;
+            const globalMax = 5;
+            // 本 token 设备里还在全局的有几个
+            const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
+            const orphanFpInToken = tokenDeviceCount - activeFpInToken;  // 已被全局清掉的(失效)
+            // 状态:🟢绿 正常(<5全局)/ 🟡黄 满前(3-4)/ 🔴红 满(5)
+            const status = globalCount >= 5 ? 'full' : (globalCount >= 3 ? 'warn' : 'ok');
+            const statusEmoji = { ok: '🟢', warn: '🟡', full: '🔴' }[status];
+            const statusColor = { ok: '#6ef09e', warn: '#f3c969', full: '#ff5060' }[status];
+            const usageClass = status === 'full' ? 'rgba(255,80,96,.2)' : (status === 'warn' ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
             return `
               <div class="token-row" data-tid="${t.id}" style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span title="状态: ${status === 'ok' ? '正常' : (status === 'warn' ? '快满' : '已满')}" style="font-size:14px;">${statusEmoji}</span>
                   <span style="font-family:monospace;font-size:13px;color:#6ef09e;font-weight:bold;">${t.id}</span>
                   <span style="font-size:11px;background:rgba(110,240,158,.3);color:#6ef09e;padding:2px 6px;border-radius:4px;">永久</span>
                   <span style="font-size:11px;color:var(--text-3);">${new Date(t.created).toLocaleDateString()}</span>
-                  <span style="font-size:12px;background:${usageClass};color:var(--text-1);padding:3px 8px;border-radius:4px;margin-left:auto;">📱 ${deviceCount} / 5</span>
+                  <span title="全局设备 ${globalCount}/${globalMax} · 本 token ${tokenDeviceCount} 个(活跃 ${activeFpInToken}${orphanFpInToken > 0 ? `,失效 ${orphanFpInToken}` : ''})" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">🌐 ${globalCount}/${globalMax}</span>
                   <button class="opt-btn xs" data-tok-expand="${t.id}">展开</button>
                   <button class="opt-btn xs" data-tok-copy="${subURL}">📋</button>
                   <button class="opt-btn xs" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑</button>
                 </div>
                 <div data-tok-detail="${t.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);font-size:12px;">
                   <div style="margin-bottom:6px;color:var(--text-2);word-break:break-all;">链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span></div>
-                  <div style="color:var(--text-2);margin-bottom:6px;">已注册设备(${deviceCount}/3):</div>
+                  <div style="color:var(--text-2);margin-bottom:6px;">
+                    本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken} 个(全局已清)</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b>
+                  </div>
                   ${t.devices.length === 0 ? '<div style="color:var(--text-3);font-size:11px;">还没设备使用过</div>' : ''}
                   ${t.devices.length > 0 ? `<div style="margin-bottom:8px;text-align:right;">
-                    <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空所有设备(${t.devices.length})</button>
+                    <button class="opt-btn xs" data-tok-clear-devices="${t.id}" style="background:rgba(255,80,96,.15);color:#ff5060;">🗑 清空 token 设备记录(${t.devices.length})</button>
                   </div>` : ''}
                   ${t.devices.map(d => `<div style="padding:6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                     <div style="flex:1;">
