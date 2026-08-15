@@ -7,26 +7,52 @@ window.FucaiTokenAuth = (function () {
   const MAX_DEVICES = 5;
   const BACKEND_KEY = 'fucai3d_backend_mode';  // 'netlify' | 'local'
 
-  // 设备指纹
+  // 设备指纹(v5.8.9:基于"设备型号"识别,清缓存不变)
+  //   1 个 iPhone = 1 fp(不管哪个浏览器)
+  //   1 个 MacBook = 1 fp
+  //   1 个 小米手机 = 1 fp
   function getDeviceFingerprint() {
+    // 优先用缓存(避免每次重算)
     const stored = localStorage.getItem(FP_KEY);
     if (stored) return stored;
+    // 提取设备型号(不依赖 localStorage)
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    let deviceModel = 'unknown';
+    if (/iPhone/.test(ua)) deviceModel = 'iPhone';
+    else if (/iPad/.test(ua)) deviceModel = 'iPad';
+    else if (/Mac/.test(platform)) deviceModel = 'Mac';
+    else if (/Windows/.test(platform)) {
+      // Windows 提版本
+      const wm = ua.match(/Windows NT (\d+\.\d+)/);
+      deviceModel = wm ? `Windows-${wm[1]}` : 'Windows';
+    }
+    else if (/Android/.test(ua)) {
+      // 提取 Android 设备型号(如 "Xiaomi 14")
+      const am = ua.match(/;\s*([^)]+)\)/);
+      if (am) {
+        const parts = am[1].split(/\s+Build/);
+        deviceModel = 'Android:' + parts[0].trim();
+      } else {
+        deviceModel = 'Android';
+      }
+    }
+    else if (/Linux/.test(platform)) deviceModel = 'Linux';
+    // 组合稳定特征(无 random!)
     const data = [
-      navigator.userAgent || '',
-      navigator.language || '',
-      (screen.width || 0) + 'x' + (screen.height || 0) + 'x' + (screen.colorDepth || 0),
-      new Date().getTimezoneOffset() || 0,
+      deviceModel,
+      screen.width + 'x' + screen.height,
       navigator.hardwareConcurrency || 0,
       navigator.deviceMemory || 0,
-      navigator.platform || '',
-      navigator.vendor || ''
+      (navigator.userAgentData && navigator.userAgentData.platform) || platform
     ].join('|');
+    // 哈希(纯稳定,无 random)
     let hash = 5381;
     for (let i = 0; i < data.length; i++) {
       hash = ((hash << 5) + hash) + data.charCodeAt(i);
       hash |= 0;
     }
-    const fp = 'fp_' + Math.abs(hash).toString(36) + Math.random().toString(36).slice(2, 6);
+    const fp = 'fp_' + Math.abs(hash).toString(36);
     try { localStorage.setItem(FP_KEY, fp); } catch (e) {}
     return fp;
   }
