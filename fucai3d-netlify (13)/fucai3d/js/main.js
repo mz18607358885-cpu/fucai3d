@@ -1681,6 +1681,9 @@ window.FucaiMain = (function () {
       本 token 设备(<b style="color:#6ef09e;">活跃 ${activeFpInToken}</b>${orphanFpInToken > 0 ? ` · <span style="color:#ff5060;">失效 ${orphanFpInToken} 个(全局已清)</span>` : ''}) · 全局 <b style="color:${statusColor};">${globalCount}/${globalMax}</b>
     `;
   }
+
+  // v5.7.2:查询结果渲染(独立查询区)
+  function renderQueryResult(results, query) {
     if (results.length === 0) {
       return `
         <div style="background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);border-radius:8px;padding:12px;color:#ff5060;font-size:13px;">
