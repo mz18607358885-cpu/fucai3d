@@ -34,11 +34,21 @@ exports.handler = async (event) => {
   const db = JSON.parse(Buffer.from(data.content, 'base64').toString('utf-8'));
 
   const cleared = Object.keys(db.globalDevices || {}).length;
-  db.globalDevices = {};  // 清空
+  db.globalDevices = {};  // 清空 globalDevices
+  // v5.8.7:同时清空所有 token 内部 devices 数组(避免回填逻辑把它们加回来)
+  let tokensCleaned = 0;
+  if (db.tokens) {
+    Object.values(db.tokens).forEach(t => {
+      if (Array.isArray(t.devices) && t.devices.length > 0) {
+        tokensCleaned += t.devices.length;
+        t.devices = [];
+      }
+    });
+  }
 
   const content = Buffer.from(JSON.stringify(db, null, 2), 'utf-8').toString('base64');
   const putBody = {
-    message: `[fucai3d clear-global] 紧急清空(共 ${cleared} 个 fp)`,
+    message: `[fucai3d clear-all] 清空 globalDevices(${cleared}) + token 内部(${tokensCleaned})`,
     content,
     branch: GH_BRANCH,
     sha
@@ -52,5 +62,5 @@ exports.handler = async (event) => {
     const txt = await putResp.text();
     return { statusCode: 200, headers, body: JSON.stringify({ ok: false, reason: `GitHub 写失败: ${putResp.status} ${txt.substring(0, 100)}` }) };
   }
-  return { statusCode: 200, headers, body: JSON.stringify({ ok: true, cleared }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true, cleared, tokensCleaned }) };
 };
