@@ -85,6 +85,17 @@ exports.handler = async (event) => {
   } else {
     db.globalDevices[fp].last = now;
   }
+  // v5.8.7:自动回填 — 如果 fp 在 token 内部 devices 数组里(老数据)
+  //   但不在 globalDevices,自动加(避免误算新设备)
+  if (!db.globalDevices[fp] && t.devices.some(d => d.id === fp)) {
+    // 找一个最早访问时间作为 first
+    const oldDev = t.devices.find(d => d.id === fp);
+    db.globalDevices[fp] = {
+      first: oldDev && oldDev.first ? oldDev.first : now,
+      last: now,
+      role: 'sub'
+    };
+  }
   // v5.8.6:加完后再算全局设备数(避免 race condition)
   const finalGlobalCount = Object.keys(db.globalDevices).length;
 
