@@ -238,10 +238,38 @@ window.FucaiMain = (function () {
 
   function $(id) { return document.getElementById(id); }
   function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
-  function toast(msg) {
+  function toast(msg, duration) {
     const t = el(`<div class="toast">${msg}</div>`);
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 1800);
+    setTimeout(() => t.remove(), duration || 1800);
+  }
+
+  // v5.8.9:统一复制到剪贴板(clipboard API + fallback)
+  function copyToClipboard(text, successMsg) {
+    successMsg = successMsg || '📋 已复制';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => toast(successMsg),
+        () => fallbackCopy(text, successMsg)
+      );
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+  function fallbackCopy(text, successMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast(successMsg);
+    } catch (e) {
+      toast('❌ 复制失败,请手动选择');
+    }
+    ta.remove();
   }
 
   // ─── 主题应用 ───
@@ -1499,7 +1527,18 @@ window.FucaiMain = (function () {
           <button class="share-btn" id="genTokenBtn" style="background:linear-gradient(135deg,#6ef09e,#2dba6d);color:var(--bg-2);">+ 生成新副链接(永久有效)</button>
           <div id="newTokenBox" style="display:none;background:rgba(110,240,158,.08);border:1px solid rgba(110,240,158,.3);border-radius:8px;padding:12px;margin-top:10px;">
             <div style="font-size:13px;color:#6ef09e;margin-bottom:6px;">✅ 副链接已生成,<strong>只显示一次,记得复制</strong>:</div>
-            <div id="newTokenUrl" style="font-family:monospace;background:rgba(0,0,0,.4);padding:8px;border-radius:4px;word-break:break-all;font-size:12px;color:#6ef09e;"></div>
+            <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap;">
+              <div id="newTokenUrl" style="flex:1;min-width:200px;font-family:monospace;background:rgba(0,0,0,.4);padding:8px 10px;border-radius:4px;word-break:break-all;font-size:12px;color:#6ef09e;user-select:all;cursor:text;" title="点击全选"></div>
+              <button class="opt-btn small" id="copyNewToken" style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;padding:8px 14px;font-size:13px;">📋 复制</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+              <button class="opt-btn xs" id="openNewToken" style="background:rgba(110,240,158,.15);color:#6ef09e;">🚀 直接打开</button>
+              <button class="opt-btn xs" id="qrNewToken" style="background:rgba(110,240,158,.15);color:#6ef09e;">📱 二维码</button>
+              <button class="opt-btn xs" id="wechatNewToken" style="background:rgba(110,240,158,.15);color:#6ef09e;">💬 分享微信</button>
+              <button class="opt-btn xs" id="selectNewToken" style="background:rgba(110,240,158,.15);color:#6ef09e;">✋ 全选文本</button>
+              <span style="font-size:11px;color:var(--text-3);margin-left:auto;">提示:点击 URL = 全选 · 复制 = 一键</span>
+            </div>
+            <div id="qrBox" style="display:none;margin-top:10px;text-align:center;padding:10px;background:#fff;border-radius:6px;"></div>
           </div>
         </div>
 
@@ -1547,9 +1586,6 @@ window.FucaiMain = (function () {
             <button class="opt-btn xs" id="refreshGlobalDevices" style="font-size:10px;padding:2px 8px;">🔄 刷新</button>
           </div>
           <div id="globalDevicesList" style="font-size:12px;color:var(--text-3);">加载中...</div>
-        </div>
-            <button class="opt-btn small" id="copyNewToken" style="margin-top:8px;">📋 复制链接</button>
-          </div>
         </div>
 
         <!-- ② 查询区(独立) -->
@@ -2419,14 +2455,70 @@ window.FucaiMain = (function () {
     if (copyNew) {
       copyNew.addEventListener('click', () => {
         const url = $('newTokenUrl').textContent.trim();
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(url).then(() => toast('📋 副链接已复制'));
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = url; document.body.appendChild(ta); ta.select();
-          document.execCommand('copy'); ta.remove();
-          toast('📋 副链接已复制');
+        copyToClipboard(url, '📋 副链接已复制到剪贴板');
+      });
+    }
+    // v5.8.9:新链接区 — 直接打开
+    const openNew = $('openNewToken');
+    if (openNew) {
+      openNew.addEventListener('click', () => {
+        const url = $('newTokenUrl').textContent.trim();
+        if (url) window.open(url, '_blank');
+      });
+    }
+    // v5.8.9:二维码(用 Google Chart API,免依赖)
+    const qrNew = $('qrNewToken');
+    if (qrNew) {
+      qrNew.addEventListener('click', () => {
+        const box = $('qrBox');
+        const url = $('newTokenUrl').textContent.trim();
+        if (!url || !box) return;
+        if (box.style.display !== 'none') {
+          box.style.display = 'none';
+          return;
         }
+        // 用纯本地 QR 生成(避免 Google Chart 依赖)
+        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
+        box.innerHTML = `
+          <img src="${qrImg}" alt="QR" style="width:160px;height:160px;border-radius:4px;" onerror="this.parentNode.innerHTML='<div style=color:red;>二维码生成失败,请直接复制链接</div>'" />
+          <div style="font-size:11px;color:#666;margin-top:6px;">扫码即可打开副链接</div>
+        `;
+        box.style.display = 'block';
+      });
+    }
+    // v5.8.9:分享微信(打开微信 Web 分享/或复制引导)
+    const wechatNew = $('wechatNewToken');
+    if (wechatNew) {
+      wechatNew.addEventListener('click', () => {
+        const url = $('newTokenUrl').textContent.trim();
+        copyToClipboard(url, '💬 链接已复制,打开微信粘贴发送');
+        toast('💬 打开微信,粘贴发给好友即可', 3000);
+      });
+    }
+    // v5.8.9:全选文本(用户可以 Ctrl+C)
+    const selectNew = $('selectNewToken');
+    if (selectNew) {
+      selectNew.addEventListener('click', () => {
+        const urlEl = $('newTokenUrl');
+        if (!urlEl) return;
+        const range = document.createRange();
+        range.selectNodeContents(urlEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        toast('✋ 文本已全选,按 Ctrl+C 复制');
+      });
+    }
+    // v5.8.9:URL 本身点击 = 全选
+    const newTokenUrl = $('newTokenUrl');
+    if (newTokenUrl && !newTokenUrl.dataset.clickBound) {
+      newTokenUrl.dataset.clickBound = '1';
+      newTokenUrl.addEventListener('click', () => {
+        const range = document.createRange();
+        range.selectNodeContents(newTokenUrl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
       });
     }
     // 复制已有 token
