@@ -85,6 +85,8 @@ exports.handler = async (event) => {
   } else {
     db.globalDevices[fp].last = now;
   }
+  // v5.8.6:加完后再算全局设备数(避免 race condition)
+  const finalGlobalCount = Object.keys(db.globalDevices).length;
 
   // token 内部 devices 数组(供主链接管理界面显示)
   const existing = t.devices.find(d => d.id === fp);
@@ -120,10 +122,10 @@ exports.handler = async (event) => {
 
   return { statusCode: 200, headers, body: JSON.stringify({
     ok: true,
-    devices: globalCount,           // 全局已用设备数
+    devices: finalGlobalCount,      // 全局已用设备数(写入后算)
     maxDevices: GLOBAL_MAX,         // 全局上限
     isNewDevice,                    // 对全局来说是否新设备
-    globalDevices: globalCount,
+    globalDevices: finalGlobalCount,
     globalMax: GLOBAL_MAX,
     tokenDevices: t.devices.length,  // 当前 token 内部已用
     expires: '永久'
