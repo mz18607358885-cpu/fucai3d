@@ -46,6 +46,36 @@
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
+# main.js no-cache(v5.8.9:用户常看到旧版 — 改 UI 必须立刻生效)
+[[headers]]
+  for = "/js/main.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# auth.js no-cache
+[[headers]]
+  for = "/js/auth.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# formulas.js no-cache
+[[headers]]
+  for = "/js/formulas.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# netlifyBackend.js no-cache
+[[headers]]
+  for = "/js/netlifyBackend.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# tokenAuth.js no-cache
+[[headers]]
+  for = "/js/tokenAuth.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
 # latest.json no-cache
 [[headers]]
   for = "/latest.json"
