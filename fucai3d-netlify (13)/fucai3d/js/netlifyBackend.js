@@ -60,6 +60,17 @@ window.FucaiNetlifyBackend = (function () {
     return { ok: true, removed, remaining: 0 };
   }
 
+  // v5.8.6:获取全局设备列表(跨 token 共享)
+  async function listGlobalDevices() {
+    const r = await call('admin-list-global-devices', 'GET');
+    return r.globalDevices || {};
+  }
+
+  // v5.8.6:删除全局设备(同时清所有 token 里的对应记录)
+  async function removeGlobalDevice(fp) {
+    return await call('admin-remove-global-device', 'POST', { fp });
+  }
+
   // 检测后端是否可用(测试调一次 list)
   async function testConnection() {
     try {
@@ -72,5 +83,5 @@ window.FucaiNetlifyBackend = (function () {
     }
   }
 
-  return { verifyToken, listTokens, createToken, deleteToken, testConnection, getBase, removeDevice, clearAllDevices };
+  return { verifyToken, listTokens, createToken, deleteToken, testConnection, getBase, removeDevice, clearAllDevices, listGlobalDevices, removeGlobalDevice };
 })();
