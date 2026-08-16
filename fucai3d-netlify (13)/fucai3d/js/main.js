@@ -90,11 +90,11 @@ window.FucaiMain = (function () {
       const map = await window.FucaiNetlifyBackend.listGlobalDevices();
       window.__globalDevicesMap = map;  // v5.8.6:存全局,token 列表用
       const list = Object.entries(map).sort((a, b) => (b[1].last || b[1].first).localeCompare(a[1].last || a[1].first));
-      // 顶部摘要
+      // 顶部摘要(v5.8.10:每 token 独立 5 台,这里只显示统计)
       if (summary) {
         const count = list.length;
         const color = count >= 5 ? '#ff5060' : (count >= 3 ? '#f3c969' : '#6ef09e');
-        summary.innerHTML = `🌐 全局 <b style="color:${color};">${count}/5</b> 设备${count >= 5 ? ' · <span style="color:#ff5060;">已满</span>' : (count >= 3 ? ' · 快满' : '')}`;
+        summary.innerHTML = `🌐 全局 <b style="color:${color};">${count}</b> 个设备已登入(每 token 独立 5 台)`;
       }
       if (list.length === 0) {
         box.innerHTML = '<div style="color:var(--text-3);">还没有任何设备登入(等人开副链接就显示)</div>';
@@ -1602,33 +1602,33 @@ window.FucaiMain = (function () {
         <!-- ③ 列表区(所有 token) -->
         <div style="font-size:13px;color:var(--text-1);font-weight:bold;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <span>③ 所有副链接(${allTokens.length} 个)</span>
-          <span id="globalDeviceSummary" style="font-size:11px;color:var(--text-3);font-weight:normal;">🌐 全局设备加载中...</span>
+          <span id="globalDeviceSummary" style="font-size:11px;color:var(--text-3);font-weight:normal;">🌐 加载中...</span>
         </div>
         ${allTokens.length === 0 ? '<div style="text-align:center;color:var(--text-3);font-size:12px;padding:14px;">还没生成副链接 ↑</div>' : ''}
         <div id="tokenList">
           ${allTokens.map(t => {
             const subURL = window.FucaiTokenAuth.makeSubUrl(t.id);
             const tokenDeviceCount = t.devices.length;  // 本 token 设备数
-            // v5.8.6:状态分类(基于全局设备)
+            // v5.8.10:每 token 独立 5 台(状态基于本 token 设备数)
+            const tokenMax = 5;
             const globalMap = window.__globalDevicesMap || {};
             const globalCount = Object.keys(globalMap).length;
             const globalMax = 5;
-            // 本 token 设备里还在全局的有几个
             const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
-            const orphanFpInToken = tokenDeviceCount - activeFpInToken;  // 已被全局清掉的(失效)
-            // 状态:🟢绿 正常(<5全局)/ 🟡黄 满前(3-4)/ 🔴红 满(5)
-            const status = globalCount >= 5 ? 'full' : (globalCount >= 3 ? 'warn' : 'ok');
+            const orphanFpInToken = tokenDeviceCount - activeFpInToken;
+            // 状态:🟢绿 正常(<3)/ 🟡黄 3-4/ 🔴红 满(5)
+            const status = tokenDeviceCount >= 5 ? 'full' : (tokenDeviceCount >= 3 ? 'warn' : 'ok');
             const statusEmoji = { ok: '🟢', warn: '🟡', full: '🔴' }[status];
             const statusColor = { ok: '#6ef09e', warn: '#f3c969', full: '#ff5060' }[status];
             const usageClass = status === 'full' ? 'rgba(255,80,96,.2)' : (status === 'warn' ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
             return `
               <div class="token-row" data-tid="${t.id}" style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <span title="状态: ${status === 'ok' ? '正常' : (status === 'warn' ? '快满' : '已满')}" style="font-size:14px;">${statusEmoji}</span>
+                  <span title="本 token 状态: ${status === 'ok' ? '正常' : (status === 'warn' ? '快满' : '已满')}" style="font-size:14px;">${statusEmoji}</span>
                   <span style="font-family:monospace;font-size:13px;color:#6ef09e;font-weight:bold;">${t.id}</span>
                   <span style="font-size:11px;background:rgba(110,240,158,.3);color:#6ef09e;padding:2px 6px;border-radius:4px;">永久</span>
                   <span style="font-size:11px;color:var(--text-3);">${new Date(t.created).toLocaleDateString()}</span>
-                  <span title="全局设备 ${globalCount}/${globalMax} · 本 token ${tokenDeviceCount} 个(活跃 ${activeFpInToken}${orphanFpInToken > 0 ? `,失效 ${orphanFpInToken}` : ''})" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">🌐 ${globalCount}/${globalMax}</span>
+                  <span title="本 token 设备 ${tokenDeviceCount}/${tokenMax} · 全局设备 ${globalCount}/${globalMax}(仅显示)" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">📱 ${tokenDeviceCount}/${tokenMax}</span>
                   <button class="opt-btn xs" data-tok-expand="${t.id}">展开</button>
                   <button class="opt-btn xs" data-tok-copy="${subURL}">📋</button>
                   <button class="opt-btn xs" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑</button>
@@ -1637,13 +1637,12 @@ window.FucaiMain = (function () {
                   <div style="margin-bottom:6px;color:var(--text-2);word-break:break-all;">链接:<span style="font-family:monospace;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">${subURL}</span></div>
                   <div data-detail-summary="${t.id}" style="color:var(--text-2);margin-bottom:6px;">
                     ${(() => {
-                      // v5.8.9 fix:inline 立即算 status(不等异步)
-                      const m = window.__globalDevicesMap || {};
-                      const gc = Object.keys(m).length;
-                      const sc = gc >= 5 ? '#ff5060' : (gc >= 3 ? '#f3c969' : '#6ef09e');
+                      // v5.8.10:每 token 独立 5 台 — 显示本 token 状态
+                      const tm = 5;
                       if (tokenDeviceCount === 0) {
-                        return '<span style="color:#888;">⚪ 从未有人登入</span> · 全局 <b style="color:' + sc + ';">' + gc + '/' + globalMax + '</b>';
+                        return '<span style="color:#888;">⚪ 从未有人登入</span> · 本 token <b style="color:#6ef09e;">0/' + tm + '</b>';
                       }
+                      const m = window.__globalDevicesMap || {};
                       const afi = (t.devices || []).filter(d => m[d.id]).length;
                       const ofi = tokenDeviceCount - afi;
                       let s = '';
@@ -1653,7 +1652,7 @@ window.FucaiMain = (function () {
                       } else {
                         s = '<span style="color:#ff5060;">🔴 已被全局清掉(失效)</span>';
                       }
-                      return '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><div>' + s + '</div><div>本 token 设备(<b style="color:#6ef09e;">活跃 ' + afi + '</b>' + (ofi > 0 ? ' · <span style="color:#ff5060;">失效 ' + ofi + '</span>' : '') + ') · 全局 <b style="color:' + sc + ';">' + gc + '/' + globalMax + '</b></div></div>';
+                      return '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><div>' + s + '</div><div>本 token 设备(<b style="color:#6ef09e;">活跃 ' + afi + '</b>' + (ofi > 0 ? ' · <span style="color:#ff5060;">失效 ' + ofi + '</span>' : '') + ') · <b>' + tokenDeviceCount + '/' + tm + '</b></div></div>';
                     })()}
                   </div>
                   <div class="detail-devices" data-detail-devices="${t.id}">
