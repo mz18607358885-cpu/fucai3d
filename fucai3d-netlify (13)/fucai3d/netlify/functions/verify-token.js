@@ -68,6 +68,9 @@ exports.handler = async (event) => {
   const fpInGlobal = !!db.globalDevices[fp];
   const globalCount = Object.keys(db.globalDevices).length;
 
+  // v5.8.10 fix:now 提前定义(在所有使用前)
+  const now = new Date().toISOString();
+
   // 设备检查(本 token 独立)
   const existing = t.devices.find(d => d.id === fp);
   let isNewDevice = false;
@@ -94,7 +97,6 @@ exports.handler = async (event) => {
   }
 
   // 全局表加/更新 fp
-  const now = new Date().toISOString();
   if (!db.globalDevices[fp]) {
     db.globalDevices[fp] = { first: now, last: now, role: 'sub' };
   } else {
