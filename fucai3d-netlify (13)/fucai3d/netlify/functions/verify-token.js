@@ -60,22 +60,37 @@ exports.handler = async (event) => {
   if (!Array.isArray(t.devices)) t.devices = [];
 
   // ════════════════════════════════════════════════
-  // v5.8.6:全局 fp 配额检查(1 浏览器 = 1 设备,不管开几个副链接)
-  //   - 算全局设备数 = Object.keys(db.globalDevices).length
-  //   - 新 fp 且全局已 5 台 → 拒绝
-  //   - 否则:全局表加/更新 + token 内部照常记(显示用)
+  // v5.8.10:每个副链接独立 5 台(每 token 5 设备,不再共享)
+  //   - 1 个 token 看自己 t.devices.length >= 5 → 拒绝
+  //   - globalDevices 只用于显示/统计,不限流
   // ════════════════════════════════════════════════
   const GLOBAL_MAX = 5;
   const fpInGlobal = !!db.globalDevices[fp];
   const globalCount = Object.keys(db.globalDevices).length;
 
-  if (!fpInGlobal && globalCount >= GLOBAL_MAX) {
-    return { statusCode: 200, headers, body: JSON.stringify({
-      ok: false,
-      reason: `已达 ${GLOBAL_MAX} 台设备全局上限(所有副链接共享,新浏览器/电脑需要换设备或清掉之前的设备记忆)`,
-      devices: globalCount, maxDevices: GLOBAL_MAX,
-      globalDevices: globalCount, globalMax: GLOBAL_MAX
-    }) };
+  // 设备检查(本 token 独立)
+  const existing = t.devices.find(d => d.id === fp);
+  let isNewDevice = false;
+  if (existing) {
+    existing.last = now;
+    existing.visits = (existing.visits || 0) + 1;
+  } else {
+    if (t.devices.length >= GLOBAL_MAX) {
+      return { statusCode: 200, headers, body: JSON.stringify({
+        ok: false,
+        reason: `本副链接已达 ${GLOBAL_MAX} 台设备上限(每个副链接独立),无法在第 ${t.devices.length + 1} 台设备使用`,
+        devices: t.devices.length, maxDevices: GLOBAL_MAX,
+        globalDevices: globalCount, globalMax: GLOBAL_MAX
+      }) };
+    }
+    isNewDevice = true;
+    t.devices.push({
+      id: fp,
+      first: now,
+      last: now,
+      visits: 1,
+      ua: (event.headers['user-agent'] || '').substring(0, 80)
+    });
   }
 
   // 全局表加/更新 fp
@@ -99,23 +114,6 @@ exports.handler = async (event) => {
   // v5.8.6:加完后再算全局设备数(避免 race condition)
   const finalGlobalCount = Object.keys(db.globalDevices).length;
 
-  // token 内部 devices 数组(供主链接管理界面显示)
-  const existing = t.devices.find(d => d.id === fp);
-  let isNewDevice = false;
-  if (existing) {
-    existing.last = now;
-    existing.visits = (existing.visits || 0) + 1;
-  } else {
-    isNewDevice = true;
-    t.devices.push({
-      id: fp,
-      first: now,
-      last: now,
-      visits: 1,
-      ua: (event.headers['user-agent'] || '').substring(0, 80)
-    });
-  }
-
   // 写回
   const newContent = Buffer.from(JSON.stringify(db, null, 2), 'utf-8').toString('base64');
   const putBody = { message: `[fucai3d verify] ${isNewDevice ? 'new global device' : 'update'} ${fp.slice(0, 12)}`, content: newContent, branch: GH_BRANCH };
@@ -133,12 +131,12 @@ exports.handler = async (event) => {
 
   return { statusCode: 200, headers, body: JSON.stringify({
     ok: true,
-    devices: finalGlobalCount,      // 全局已用设备数(写入后算)
-    maxDevices: GLOBAL_MAX,         // 全局上限
-    isNewDevice,                    // 对全局来说是否新设备
+    devices: t.devices.length,       // v5.8.10:本 token 设备数
+    maxDevices: GLOBAL_MAX,         // 本 token 上限
+    isNewDevice,                    // 对本 token 是否新设备
     globalDevices: finalGlobalCount,
     globalMax: GLOBAL_MAX,
-    tokenDevices: t.devices.length,  // 当前 token 内部已用
+    tokenDevices: t.devices.length,
     expires: '永久'
   }) };
 };
