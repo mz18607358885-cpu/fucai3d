@@ -10,9 +10,12 @@
   ];
 
   async function fetchLatestJson() {
+    // v5.8.11:加 cache buster 绕 Netlify Edge cache
+    const cb = Date.now();
     for (const url of LATEST_URLS) {
       try {
-        const res = await fetch(url, { cache: 'default' });
+        const urlWithCb = url + (url.includes('?') ? '&' : '?') + 'cb=' + cb;
+        const res = await fetch(urlWithCb, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
