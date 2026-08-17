@@ -1,6 +1,6 @@
 // service-worker.js — PWA 离线缓存
 // 缓存策略:cache-first(命中返回缓存,miss 走网络)
-const CACHE = 'fc3d-v2';  // v5.7.11:改名强制刷新缓存
+const CACHE = 'fc3d-v3';  // v5.8.11:改名强制刷新缓存(最新期 2026219)
 const ASSETS = [
   '/',
   '/index.html',
