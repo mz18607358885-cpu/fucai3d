@@ -1,83 +1,40 @@
 name: 抓取福彩3D最新开奖数据
-permissions:
-  contents: write
+
 on:
   schedule:
-    - cron: "18 13 * * *"
+    - cron: "20 13 * * *"  # 21:20 北京
   workflow_dispatch:
-    inputs:
-      pagesize:
-        description: "抓几期"
-        default: "5"
 
 jobs:
   fetch-3d:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: 抓取数据
-        run: |
-          PAGESIZE="${{ github.event.inputs.pagesize || 5 }}"
-          for PROXY in "https://api.allorigins.win/raw?url=https%3A%2F%2Fm.500.com%2Findex.php%3Fc%3Dkaijiang%26a%3DajaxLoadMoreExpect%26lot%3Dsd%26page%3D1%26pagesize%3D${PAGESIZE}" "https://corsproxy.io/?https%3A%2F%2Fm.500.com%2Findex.php%3Fc%3Dkaijiang%26a%3DajaxLoadMoreExpect%26lot%3Dsd%26page%3D1%26pagesize%3D${PAGESIZE}" "https://m.500.com/index.php?c=kaijiang&a=ajaxLoadMoreExpect&lot=sd&page=1&pagesize=${PAGESIZE}"; do
-            curl -sfL "$PROXY" -o /tmp/raw.json && [ -s /tmp/raw.json ] && break
-          done
-          echo "raw size: $(wc -c < /tmp/raw.json 2>/dev/null || echo 0)"
-          head -c 300 /tmp/raw.json 2>/dev/null
-
-      - name: 写解析脚本
-        run: |
-          cat > /tmp/parse.py << 'PYSCRIPT'
-          import json, re, sys, os
-          try:
-              with open('/tmp/raw.json', 'r', encoding='utf-8') as f:
-                  raw = f.read()
-          except Exception as e:
-              print(f"read fail: {e}")
-              sys.exit(0)
-
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sfL --max-time 20 "https://www.17500.cn/getData/3d.TXT" -o /tmp/raw.txt
+          ls -la /tmp/raw.txt
+      - run: |
+          python3 << 'EOF'
+          import json, os
+          raw = open('/tmp/raw.txt').read()
           items = []
-          if raw.strip().startswith('{'):
-              try:
-                  data = json.loads(raw)
-                  if data.get('code') == '100' and 'data' in data:
-                      result = data['data'].get('result', '')
-                      pattern = r'kaij-tit[^>]*>(\d+)期<em>([\d\-]+).*?red-(?:ball|txt)[^>]*>(\d+)</li>\s*<li class="red-(?:ball|txt)"[^>]*>(\d+)</li>\s*<li class="red-(?:ball|txt)"[^>]*>(\d+)</li>'
-                      for m in re.finditer(pattern, result, re.DOTALL):
-                          items.append({
-                              'p': m.group(1),
-                              'd': m.group(2),
-                              'a': int(m.group(3)),
-                              'b': int(m.group(4)),
-                              'c': int(m.group(5))
-                          })
-              except Exception as e:
-                  print(f"parse fail: {e}")
-
-          if not items:
-              print("no items, exit")
-              sys.exit(0)
-
-          for it in items:
-              a, b, c = it['a'], it['b'], it['c']
-              it['sum'] = a + b + c
-              it['span'] = max(a, b, c) - min(a, b, c)
-              it['type'] = '组三' if (a == b or b == c or a == c) else '组六'
-
-          output = {'fetchedAt': '2026-08-09T13:18:00Z', 'count': len(items), 'data': items}
+          for line in raw.strip().split('\n'):
+              p = line.split()
+              if len(p) < 5: continue
+              try: a,b,c = int(p[2]),int(p[3]),int(p[4])
+              except: continue
+              if len(p[0]) != 7: continue
+              items.append({'p':p[0],'d':p[1],'a':a,'b':b,'c':c,
+                  'sum':a+b+c,'span':max(a,b,c)-min(a,b,c),
+                  'type':'组三' if (a==b or b==c or a==c) else '组六'})
+          items.sort(key=lambda x:int(x['p']),reverse=True)
+          out = {'fetchedAt':'auto','count':len(items[:5]),'data':items[:5]}
           os.makedirs('fucai3d-netlify (13)/fucai3d', exist_ok=True)
-          with open('fucai3d-netlify (13)/fucai3d/latest.json', 'w', encoding='utf-8') as f:
-              json.dump(output, f, ensure_ascii=False, indent=2)
-          print(f"wrote {len(items)} periods to latest.json")
-          PYSCRIPT
-
-      - name: 解析 + 写 latest.json
-        run: python3 /tmp/parse.py
-
-      - name: Commit & Push
-        run: |
+          json.dump(out, open('fucai3d-netlify (13)/fucai3d/latest.json','w'), ensure_ascii=False, indent=2)
+          print(f"wrote {len(items[:5])} periods")
+          EOF
+      - run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "fucai3d-netlify (13)/fucai3d/latest.json"
-          git diff --cached --quiet || (git commit -m "auto: 抓取 $(date -u +%Y-%m-%dT%H:%M:%SZ)" && git push)
+          git diff --cached --quiet || (git commit -m "auto: 抓取" && git push)
