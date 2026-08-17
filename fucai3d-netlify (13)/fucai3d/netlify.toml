@@ -52,6 +52,12 @@
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
+# service-worker.js no-cache(v5.8.11:SW 更新必须立刻生效)
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
 # auth.js no-cache
 [[headers]]
   for = "/js/auth.js"
