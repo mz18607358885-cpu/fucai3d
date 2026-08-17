@@ -59,7 +59,7 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=300, must-revalidate',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({
@@ -84,7 +84,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300, must-revalidate',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
