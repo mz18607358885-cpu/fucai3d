@@ -281,8 +281,8 @@ a:hover { text-decoration: underline; }
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 32px; height: 28px;
   padding: 0 8px;
-  background: color-mix(in srgb, var(--kill) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--kill) 40%, transparent);
+  background: rgba(255, 107, 107, 0.18);
+  border: 1px solid rgba(255, 107, 107, 0.4);
   color: var(--kill-2);
   border-radius: 6px;
   font-family: 'Courier New', monospace;
@@ -291,10 +291,27 @@ a:hover { text-decoration: underline; }
 }
 .kill-code sup { font-size: 9px; margin-left: 2px; color: var(--kill); font-weight: 500; }
 .kill-code.hot {
-  background: color-mix(in srgb, var(--kill) 32%, transparent);
-  border-color: color-mix(in srgb, var(--kill) 60%, transparent);
-  color: #ff8d8d;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--kill) 25%, transparent);
+  background: rgba(255, 107, 107, 0.55);
+  border: 2px solid #ff8d8d;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.7), inset 0 0 6px rgba(255, 141, 141, 0.4);
+  font-weight: 900;
+  position: relative;
+}
+.kill-code.hot::after {
+  content: "⭐";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 11px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,.4);
 }
 .kill-code.add {
   background: rgba(255, 255, 255, 0.05);
