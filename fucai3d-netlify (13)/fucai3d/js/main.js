@@ -90,11 +90,10 @@ window.FucaiMain = (function () {
       const map = await window.FucaiNetlifyBackend.listGlobalDevices();
       window.__globalDevicesMap = map;  // v5.8.6:存全局,token 列表用
       const list = Object.entries(map).sort((a, b) => (b[1].last || b[1].first).localeCompare(a[1].last || a[1].first));
-      // 顶部摘要(v5.8.10:每 token 独立 5 台,这里只显示统计)
+      // 顶部摘要(v5.8.10:每 token 独立 5 台,这里只显示统计供参考)
       if (summary) {
         const count = list.length;
-        const color = count >= 5 ? '#ff5060' : (count >= 3 ? '#f3c969' : '#6ef09e');
-        summary.innerHTML = `🌐 全局 <b style="color:${color};">${count}</b> 个设备已登入(每 token 独立 5 台)`;
+        summary.innerHTML = `🌐 全局 <b style="color:#f3c969;">${count}</b> 个设备已登入(每 token 独立 5 台)`;
       }
       if (list.length === 0) {
         box.innerHTML = '<div style="color:var(--text-3);">还没有任何设备登入(等人开副链接就显示)</div>';
@@ -102,7 +101,7 @@ window.FucaiMain = (function () {
       }
       box.innerHTML = `
         <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">
-          总共 <b style="color:#f3c969;">${list.length} / 5</b> 台设备(1 浏览器 = 1 设备,跨所有副链接共享)
+          📊 全局 <b style="color:#f3c969;">${list.length}</b> 台设备(1 浏览器 = 1 设备,仅参考用 · v5.8.10 每 token 独立 5 台)
         </div>
         <div style="max-height:200px;overflow-y:auto;">
           ${list.map(([fp, info]) => {
@@ -147,7 +146,8 @@ window.FucaiMain = (function () {
           const globalMax = 5;
           const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
           const orphanFpInToken = tokenDeviceCount - activeFpInToken;
-          const status = globalCount >= 5 ? 'full' : (globalCount >= 3 ? 'warn' : 'ok');
+          // v5.8.11 修:状态基于本 token 设备数(v5.8.10 每 token 独立 5 台)
+          const status = tokenDeviceCount >= 5 ? 'full' : (tokenDeviceCount >= 3 ? 'warn' : 'ok');
           const statusEmoji = { ok: '🟢', warn: '🟡', full: '🔴' }[status];
           const statusColor = { ok: '#6ef09e', warn: '#f3c969', full: '#ff5060' }[status];
           const usageClass = status === 'full' ? 'rgba(255,80,96,.2)' : (status === 'warn' ? 'rgba(243,201,105,.2)' : 'rgba(110,240,158,.15)');
@@ -159,7 +159,7 @@ window.FucaiMain = (function () {
               <span style="font-family:monospace;font-size:13px;color:#6ef09e;font-weight:bold;">${t.id}</span>
               <span style="font-size:11px;background:rgba(110,240,158,.3);color:#6ef09e;padding:2px 6px;border-radius:4px;">永久</span>
               <span style="font-size:11px;color:var(--text-3);">${new Date(t.created).toLocaleDateString()}</span>
-              <span title="全局 ${globalCount}/${globalMax} · 本 token ${tokenDeviceCount}" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">🌐 ${globalCount}/${globalMax}</span>
+              <span title="本 token ${tokenDeviceCount}/5 · 全局 ${globalCount}/${globalMax}" style="font-size:12px;background:${usageClass};color:${statusColor};padding:3px 8px;border-radius:4px;margin-left:auto;font-weight:bold;">📱 ${tokenDeviceCount}/5</span>
               <button class="opt-btn xs" data-tok-expand="${t.id}">展开</button>
               <button class="opt-btn xs" data-tok-copy="${subURL}">📋</button>
               <button class="opt-btn xs" data-tok-del="${t.id}" style="background:rgba(255,80,96,.2);color:#ff5060;">🗑</button>
@@ -1695,12 +1695,13 @@ window.FucaiMain = (function () {
     const globalMap = window.__globalDevicesMap || {};
     const globalCount = Object.keys(globalMap).length;
     const globalMax = 5;
-    const statusColor = globalCount >= 5 ? '#ff5060' : (globalCount >= 3 ? '#f3c969' : '#6ef09e');
     // 找 token 设备
     const allTokens = window.FucaiTokenAuth.listTokens() || [];
     const t = allTokens.find(x => x.id === tid);
     if (!t) return;
     const tokenDeviceCount = t.devices.length;
+    // v5.8.11 修:状态基于本 token 设备数(v5.8.10 每 token 独立 5 台)
+    const statusColor = tokenDeviceCount >= 5 ? '#ff5060' : (tokenDeviceCount >= 3 ? '#f3c969' : '#6ef09e');
     const activeFpInToken = (t.devices || []).filter(d => globalMap[d.id]).length;
     const orphanFpInToken = tokenDeviceCount - activeFpInToken;
     // v5.8.9:加"真实状态"显示
