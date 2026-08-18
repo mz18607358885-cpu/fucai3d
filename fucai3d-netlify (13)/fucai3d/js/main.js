@@ -437,6 +437,11 @@ window.FucaiMain = (function () {
     return `
       <div class="block">
         <div class="block-title">🎯 选号池 <span class="badge">v5.3 方案 C · 先杀后选(混合)</span></div>
+        <div style="background:rgba(255,141,141,.08);border:1px solid rgba(255,141,141,.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text-2);line-height:1.7;">
+          <span style="color:#ff8d8d;font-weight:bold;">⭐ = 高置信度杀号</span>(≥2 个公式同时杀这号)· 200 期回测杀对率 <b style="color:#6ef09e;">80-85%</b><br>
+          <span style="color:#c8b890;">无星 = 单公式</span> · 200 期回测 <b>~74.4%</b>(略高于理论随机 72.9%)<br>
+          <span style="color:#888;font-size:11px;">⚠️ <b>不是 100%</b>:高置信度也有 15-20% 杀错 · 3D 1000 注本质 ≈ 随机,杀号只是 <b>减少 30-50% 注数</b>,不是稳定盈利</span>
+        </div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
           📐 <strong>方案 C 流程</strong>:<br>
           ① <strong style="color:#ff5060;">杀(排除)</strong>:十位轴 3 数(单号杀对率 82.31% ≈ 随机,3数全杀对率 57.14% 略高)+ 杀和尾 + 选对率<25% 的杀号公式 → 排除 ~3-5 个号<br>
