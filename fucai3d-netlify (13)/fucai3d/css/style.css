@@ -313,6 +313,12 @@ a:hover { text-decoration: underline; }
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0,0,0,.4);
 }
+.kill-code.mid {
+  background: rgba(243, 201, 105, 0.18);
+  border-color: rgba(243, 201, 105, 0.5);
+  color: #f3c969;
+  font-weight: 800;
+}
 .kill-code.add {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.12);
