@@ -407,18 +407,43 @@ window.FucaiFormula = (function () {
     }
 
     // ─── 旧字段(三位/全局),保持兼容 ───
-    const bai = tallyFromVotes(allVotes);
-    const shi = tallyFromVotes(allVotes);
-    const ge  = tallyFromVotes(allVotes);
     const global = tallyFromVotes(allVotes);
+
+    // ═══════════════════════════════════════════════════════
+    // v5.8.11 定位杀:每位只显示"该位回测率高"的 chip
+    //   - 用 BACKTEST.baiRate/shiRate/geRate 排序
+    //   - 3 张卡显示真正按位差异
+    // ═══════════════════════════════════════════════════════
+    function buildPosKills(pos) {  // pos = 'bai' | 'shi' | 'ge'
+      const rateKey = pos + 'Rate';
+      // 收集本期的 (公式名, 杀号) + 该位的 200 期回测率
+      const codeMap = {};  // code -> {code, rate, weight, names, hit}
+      result.kills.forEach(k => {
+        const bt = BACKTEST[k.name];
+        if (!bt || bt[rateKey] == null) return;
+        if (!codeMap[k.code]) codeMap[k.code] = {
+          code: k.code, rate: 0, weight: 0, names: [], hit: 0
+        };
+        // 取所有公式中**最高**的 200 期回测率(代表杀这号对该位的准度)
+        if (bt[rateKey] > codeMap[k.code].rate) codeMap[k.code].rate = bt[rateKey];
+        codeMap[k.code].weight += bt.weight || 1.0;
+        codeMap[k.code].names.push(`${k.name}(${bt[rateKey].toFixed(1)}%)`);
+        codeMap[k.code].hit++;
+      });
+      return Object.values(codeMap).sort((a, b) => b.rate - a.rate || b.weight - a.weight || a.code - b.code);
+    }
+    const bai = buildPosKills('bai');
+    const shi = buildPosKills('shi');
+    const ge  = buildPosKills('ge');
+
+    // 按位高置信度(rate ≥ 92% = 2.66% 高于随机 90%)
+    const baiHigh = bai.filter(v => v.rate >= 92);
+    const shiHigh = shi.filter(v => v.rate >= 92);
+    const geHigh  = ge.filter(v => v.rate >= 92);
 
     const baiAll = bai;
     const shiAll = shi;
     const geAll  = ge;
-
-    const baiHigh = high.map(v => ({ code: v.code, hit: v.hit }));
-    const shiHigh = high.map(v => ({ code: v.code, hit: v.hit }));
-    const geHigh  = high.map(v => ({ code: v.code, hit: v.hit }));
 
     // 高准公式输出(供 smartPick)
     const highKill = result.kills
@@ -938,22 +963,22 @@ window.FucaiFormula = (function () {
     // v5.8 真实杀号 200 期回测(2026-01-09 至 2026-08-09)
     // 杀号 1 个号,理论基准 72.9% (=(9/10)^3);真正高于基准的有 3 个
     // rate = "选号"30% 基准  /  killRate = "杀号"72.9% 基准  /  weight = 共识投票权重
-    '两期跨度相加取尾':       { rate: 26.90, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '三数相乘取个位':         { rate: 23.35, base: 30, level: 'low',  killRate: 77.23, killBase: 72.9, killLevel: 'high', weight: 1.5 },  // 最高
-    '和值×0.618首位':        { rate: 27.41, base: 30, level: 'low',  killRate: 72.77, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '百×5+十×8取尾':         { rate: 26.40, base: 30, level: 'low',  killRate: 74.26, killBase: 72.9, killLevel: 'high', weight: 1.4 },  // 高准
-    '(A+C)取尾':             { rate: 30.46, base: 30, level: 'high', killRate: 69.31, killBase: 72.9, killLevel: 'low',  weight: 0.7 },
-    '(和值-跨度)取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.27, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '两期和尾相加取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '(跨度+个位)×3取尾':     { rate: 27.92, base: 30, level: 'low',  killRate: 71.29, killBase: 72.9, killLevel: 'mid',  weight: 0.9 },
-    '十+个取尾杀下期':        { rate: 27.92, base: 30, level: 'low',  killRate: 71.79, killBase: 72.9, killLevel: 'low',  weight: 0.8 },
-    '上期十位直接杀':         { rate: 24.37, base: 30, level: 'low',  killRate: 75.25, killBase: 72.9, killLevel: 'high', weight: 1.4 },  // 高准
-    // v5.8 新加 5 个公式(200 期真实回测)
-    '冷号回补杀(20期)':      { rate: 28.00, base: 30, level: 'low',  killRate: 72.00, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '012路杀((A%3+C%3))':    { rate: 27.50, base: 30, level: 'low',  killRate: 72.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '和值+3取尾杀':          { rate: 26.80, base: 30, level: 'low',  killRate: 73.20, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '大中小杀(B+2取尾)':     { rate: 27.10, base: 30, level: 'low',  killRate: 72.90, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
-    '期号尾数杀':            { rate: 26.50, base: 30, level: 'low',  killRate: 73.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0 },
+    // v5.8.11 加 baiRate/shiRate/geRate:220 期**按位**回测(理论 90%)
+    '两期跨度相加取尾':       { rate: 26.90, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 92.66, shiRate: 90.37, geRate: 87.61 },
+    '三数相乘取个位':         { rate: 23.35, base: 30, level: 'low',  killRate: 77.23, killBase: 72.9, killLevel: 'high', weight: 1.5,  baiRate: 91.74, shiRate: 91.28, geRate: 91.74 },
+    '和值×0.618首位':        { rate: 27.41, base: 30, level: 'low',  killRate: 72.77, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 92.66, shiRate: 90.37, geRate: 91.28 },
+    '百×5+十×8取尾':         { rate: 26.40, base: 30, level: 'low',  killRate: 74.26, killBase: 72.9, killLevel: 'high', weight: 1.4,  baiRate: 90.37, shiRate: 87.16, geRate: 95.41 },  // ⭐⭐⭐ 选个位 95.41%
+    '(和值-跨度)取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.27, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 90.83, shiRate: 88.07, geRate: 92.20 },
+    '两期和尾相加取尾':      { rate: 27.41, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 88.07, shiRate: 92.20, geRate: 91.28 },
+    '上期十位直接杀':         { rate: 24.37, base: 30, level: 'low',  killRate: 75.25, killBase: 72.9, killLevel: 'high', weight: 1.4,  baiRate: 90.83, shiRate: 92.66, geRate: 93.12 },  // ⭐ 选十位 92.66%
+    '(跨度+个位)×3取尾':    { rate: 27.92, base: 30, level: 'low',  killRate: 71.29, killBase: 72.9, killLevel: 'mid',  weight: 0.9,  baiRate: 89.91, shiRate: 91.74, geRate: 88.07 },
+    '十+个取尾杀下期':        { rate: 27.92, base: 30, level: 'low',  killRate: 71.79, killBase: 72.9, killLevel: 'low',  weight: 0.8,  baiRate: 89.91, shiRate: 89.45, geRate: 90.37 },
+    '(A+C)取尾':             { rate: 30.46, base: 30, level: 'high', killRate: 69.31, killBase: 72.9, killLevel: 'low',  weight: 0.7,  baiRate: 89.45, shiRate: 85.78, geRate: 89.45 },
+    '冷号回补杀(20期)':      { rate: 28.00, base: 30, level: 'low',  killRate: 72.00, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 89.91, shiRate: 90.37, geRate: 90.37 },
+    '012路杀((A%3+C%3))':   { rate: 27.50, base: 30, level: 'low',  killRate: 72.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 87.61, shiRate: 90.37, geRate: 90.83 },
+    '和值+3取尾杀':          { rate: 26.80, base: 30, level: 'low',  killRate: 73.20, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 90.83, shiRate: 91.74, geRate: 92.20 },
+    '大中小杀(B+2取尾)':    { rate: 27.10, base: 30, level: 'low',  killRate: 72.90, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 91.74, shiRate: 90.83, geRate: 90.83 },
+    '期号尾数杀':            { rate: 26.50, base: 30, level: 'low',  killRate: 73.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 89.91, shiRate: 90.37, geRate: 90.83 },
 
     // === 独胆(同上,选对率基准 30%) ===
     '(A×4+B×9+C×9+3)取尾':  { rate: 30.81, base: 30, level: 'high', killRate: 69.19, killBase: 72.9, killLevel: 'low',  weight: 0.7 },
