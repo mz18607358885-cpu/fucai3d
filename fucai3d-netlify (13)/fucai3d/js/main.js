@@ -416,31 +416,68 @@ window.FucaiMain = (function () {
   // ─── 杀号池 ───
   function renderKillPool() {
     const kp = _killPool;
-    const col = (title, list, all, high) => {
-      const codes = list.map(x => `<span class="kill-code ${x.hit >= 2 ? 'hot' : ''}">${x.code}<sup>×${x.hit}</sup></span>`).join('');
-      const allStr = all.filter(x => !list.some(y => y.code === x.code)).map(x => `<span class="kill-code add">${x.code}<sup>×${x.hit}</sup></span>`).join('');
+    const col = (title, list, all, high, bestFormula) => {
+      // v5.8.11 按位回测:rate 越高,chip 越"高置信"
+      const codes = list.map(x => {
+        const cls = x.rate >= 92 ? 'hot' : (x.rate >= 90 ? 'mid' : '');
+        const sup = `<sup>${x.rate.toFixed(1)}%</sup>`;
+        return `<span class="kill-code ${cls}" title="${x.names.join(', ')}">${x.code}${sup}</span>`;
+      }).join('');
       return `
         <div class="pool-col">
           <h4><span class="dot"></span>${title} <span class="pool-meta">公式 ${list.length} 项</span></h4>
+          ${bestFormula ? `<div style="font-size:11px;color:#6ef09e;margin-bottom:6px;font-weight:bold;">⭐ 推荐关注: ${bestFormula.name} (${bestFormula.rate.toFixed(2)}%)</div>` : ''}
           <div class="pool-row">
             <span class="pool-label">本位杀:</span>
             <div class="pool-codes">${codes || '<span class="empty-tag">无</span>'}</div>
           </div>
-          <div class="pool-row">
-            <span class="pool-label">+ 全局:</span>
-            <div class="pool-codes">${allStr || '<span class="empty-tag">无新增</span>'}</div>
-          </div>
-          ${high.length ? `<div class="pool-highlight">🔥 高置信度(≥2 公式同时命中): ${high.map(x => x.code).join('、')}</div>` : ''}
+          ${high.length ? `<div class="pool-highlight">🔥 该位高置信度(≥92%): ${high.map(x => `${x.code}(${x.rate.toFixed(1)}%)`).join('、')}</div>` : ''}
         </div>
       `;
     };
+
+    // v5.8.11 找每位最佳公式
+    function findBestFormula(pos) {
+      const rateKey = pos + 'Rate';
+      let best = null;
+      Object.entries(FucaiFormula.BACKTEST).forEach(([name, bt]) => {
+        if (bt[rateKey] == null) return;
+        // 只看主杀号公式(权重 ≥ 1.0)
+        if ((bt.weight || 0) < 1.0) return;
+        if (!best || bt[rateKey] > best.rate) {
+          best = { name, rate: bt[rateKey] };
+        }
+      });
+      return best;
+    }
+    const bestBai = findBestFormula('bai');
+    const bestShi = findBestFormula('shi');
+    const bestGe  = findBestFormula('ge');
+
     return `
       <div class="block">
-        <div class="block-title">🎯 选号池 <span class="badge">v5.3 方案 C · 先杀后选(混合)</span></div>
-        <div style="background:rgba(255,141,141,.08);border:1px solid rgba(255,141,141,.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text-2);line-height:1.7;">
-          <span style="color:#ff8d8d;font-weight:bold;">⭐ = 高置信度杀号</span>(≥2 个公式同时杀这号)· 200 期回测杀对率 <b style="color:#6ef09e;">80-85%</b><br>
-          <span style="color:#c8b890;">无星 = 单公式</span> · 200 期回测 <b>~74.4%</b>(略高于理论随机 72.9%)<br>
-          <span style="color:#888;font-size:11px;">⚠️ <b>不是 100%</b>:高置信度也有 15-20% 杀错 · 3D 1000 注本质 ≈ 随机,杀号只是 <b>减少 30-50% 注数</b>,不是稳定盈利</span>
+        <div class="block-title">🎯 选号池 <span class="badge">v5.8.11 · 220 期按位回测</span></div>
+        <div style="background:linear-gradient(135deg,rgba(110,240,158,.08),rgba(255,141,141,.08));border:1px solid rgba(110,240,158,.3);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text-2);line-height:1.8;">
+          <div style="color:#6ef09e;font-weight:bold;font-size:13px;margin-bottom:6px;">🎯 220 期真实回测 · 定位杀才是真准!</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+            <div style="background:rgba(0,0,0,.2);padding:6px 8px;border-radius:6px;">
+              <b style="color:#6ef09e;">选百位</b> · 最佳 ${bestBai ? `<span style="color:#ff8d8d;font-weight:bold;">${bestBai.rate.toFixed(2)}%</span> ${bestBai.name}` : '—'}<br>
+              <span style="font-size:10px;color:#888;">理论随机 90%</span>
+            </div>
+            <div style="background:rgba(0,0,0,.2);padding:6px 8px;border-radius:6px;">
+              <b style="color:#6ef09e;">选十位</b> · 最佳 ${bestShi ? `<span style="color:#ff8d8d;font-weight:bold;">${bestShi.rate.toFixed(2)}%</span> ${bestShi.name}` : '—'}<br>
+              <span style="font-size:10px;color:#888;">理论随机 90%</span>
+            </div>
+            <div style="background:rgba(0,0,0,.2);padding:6px 8px;border-radius:6px;border:1px solid rgba(255,141,141,.5);">
+              <b style="color:#ff8d8d;">⭐ 选个位</b> · 最佳 ${bestGe ? `<span style="color:#6ef09e;font-weight:bold;font-size:13px;">${bestGe.rate.toFixed(2)}%</span> ${bestGe.name}` : '—'}<br>
+              <span style="font-size:10px;color:#888;">理论随机 90% · 最高!</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#888;border-top:1px dashed rgba(110,240,158,.2);padding-top:6px;">
+            📌 <b style="color:#ff8d8d;">chip 上 %</b> = 该号在该位的 220 期回测杀对率(单公式 200 期数据,理论 90%)<br>
+            <span style="color:#ff8d8d;font-weight:bold;">⭐ = 强发光</span> ≥92%(强推荐) · <span style="color:#f3c969;font-weight:bold;">● = 中等</span> 90-92% · 无标记 = 90% 附近<br>
+            ⚠️ <b>不是 100%</b>:3D 1000 注本质 ≈ 随机,定位杀只是 <b>减少 30-50% 注数</b>,不是稳定盈利
+          </div>
         </div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
           📐 <strong>方案 C 流程</strong>:<br>
@@ -449,9 +486,9 @@ window.FucaiMain = (function () {
           📊 49 期回测:<strong>整注命中 0.45%</strong>(v5.0 的 0% → v5.3 的 0.45%,首次出现)
         </div>
         <div class="pool-grid">
-          ${col('选 百 位', kp.bai, kp.global, kp.baiHigh)}
-          ${col('选 十 位', kp.shi, kp.global, kp.shiHigh)}
-          ${col('选 个 位', kp.ge,  kp.global, kp.geHigh)}
+          ${col('选 百 位', kp.bai, kp.global, kp.baiHigh, bestBai)}
+          ${col('选 十 位', kp.shi, kp.global, kp.shiHigh, bestShi)}
+          ${col('⭐ 选 个 位', kp.ge,  kp.global, kp.geHigh, bestGe)}
         </div>
         ${renderExcludeBlock(_result)}
         ${renderAxisBlock(_result)}
