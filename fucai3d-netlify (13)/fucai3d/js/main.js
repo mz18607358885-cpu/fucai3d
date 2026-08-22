@@ -746,16 +746,14 @@ window.FucaiMain = (function () {
           </div>
           <div class="pick-list">
             ${p.picks.map((x, i) => `
-              <div class="pick-row">
+              <div class="pick-row" title="复制 ${x.a}${x.b}${x.c}">
                 <span class="pick-idx">#${String(i + 1).padStart(2, '0')}</span>
                 <span class="pick-ball">${x.a}</span>
                 <span class="pick-ball">${x.b}</span>
                 <span class="pick-ball">${x.c}</span>
                 <span class="pick-reason">${x.reason}</span>
-                <span style="display:flex;gap:4px;margin-left:auto;">
-                  <button class="opt-btn xs" data-copy-one="${x.a}${x.b}${x.c}" title="复制这注 ${x.a}${x.b}${x.c}">📋</button>
-                  <button class="opt-btn xs" data-fav-one='${JSON.stringify([x]).replace(/'/g, "&apos;")}' title="收藏这注 ${x.a}${x.b}${x.c}">⭐</button>
-                </span>
+                <button class="opt-btn xs" data-copy-one="${x.a}${x.b}${x.c}" title="复制 ${x.a}${x.b}${x.c}" style="padding:2px 6px;font-size:11px;">📋</button>
+                <button class="opt-btn xs" data-fav-one='${JSON.stringify([x]).replace(/'/g, "&apos;")}' title="收藏 ${x.a}${x.b}${x.c}" style="padding:2px 6px;font-size:11px;">⭐</button>
               </div>
             `).join('')}
           </div>
