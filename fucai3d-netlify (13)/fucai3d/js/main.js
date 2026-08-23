@@ -416,39 +416,6 @@ window.FucaiMain = (function () {
   // ─── 杀号池 ───
   function renderKillPool() {
     const kp = _killPool;
-    // v5.8.13 预测下期形态(在选号池顶部最显眼位置)
-    let typePredictTopHTML = '';
-    if (_result && _result.typePredict && _result.typePredict.triggers && _result.typePredict.triggers.length > 0) {
-      const tp = _result.typePredict;
-      const recMap = { zu3: '组三', zu6: '组六', mixed: '不限', baozi: '豹子' };
-      const recEmoji = { zu3: '🎯', zu6: '🎯', mixed: '✨', baozi: '🐆' };
-      const recColor = { zu3: '#f3c969', zu6: '#6ef09e', mixed: '#888', baozi: '#a78bfa' };
-      const recText = tp.recommend || 'mixed';
-      const bestTrig = tp.triggers.reduce((best, t) => (!best || t.rate > best.rate) ? t : best, null);
-      typePredictTopHTML = `
-        <div style="background:linear-gradient(135deg,rgba(110,240,158,.12),rgba(243,201,105,.06));border:1px solid rgba(110,240,158,.35);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div style="font-size:20px;">${recEmoji[recText]}</div>
-          <div style="flex:1;min-width:200px;">
-            <div style="font-size:13px;color:var(--text-3);margin-bottom:2px;">🔮 v5.8.13 预测下期形态(220 期回测)</div>
-            <div style="font-size:15px;font-weight:bold;color:${recColor[recText]};">
-              预测开 <span style="font-size:18px;">${recMap[recText]}</span>
-              ${recText === 'zu3' ? '<span style="font-size:11px;color:#888;font-weight:normal;">(3 数有重复,270 注)</span>' : ''}
-              ${recText === 'zu6' ? '<span style="font-size:11px;color:#888;font-weight:normal;">(3 数各不相同,720 注)</span>' : ''}
-            </div>
-            ${bestTrig ? `<div style="font-size:11px;color:var(--text-2);margin-top:2px;">主要依据: <b style="color:${bestTrig.lift >= 10 ? '#6ef09e' : '#f3c969'};">${bestTrig.name}</b> <span style="color:#888;">(${bestTrig.rate.toFixed(2)}% · +${bestTrig.lift.toFixed(2)})</span></div>` : ''}
-          </div>
-          <details style="font-size:11px;color:var(--text-3);cursor:pointer;">
-            <summary style="color:#f3c969;">展开 ${tp.triggers.length} 条</summary>
-            <div style="margin-top:6px;max-width:300px;">
-              ${tp.triggers.map(t => `<div style="padding:3px 6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:2px;display:flex;justify-content:space-between;gap:8px;">
-                <span>${t.name}</span>
-                <span><b style="color:${t.lift >= 10 ? '#6ef09e' : (t.lift >= 5 ? '#f3c969' : '#c8b890')};">${t.rate.toFixed(2)}%</b> <span style="color:#888;">+${t.lift.toFixed(2)}</span></span>
-              </div>`).join('')}
-            </div>
-          </details>
-        </div>
-      `;
-    }
     const col = (title, list, all, high, bestFormula) => {
       // v5.8.11 按位回测:rate 越高,chip 越"高置信"
       const codes = list.map(x => {
@@ -489,8 +456,7 @@ window.FucaiMain = (function () {
 
     return `
       <div class="block">
-        <div class="block-title">🎯 选号池 <span class="badge">v5.8.13 · 预测 + 按位回测</span></div>
-        ${typePredictTopHTML}
+        <div class="block-title">🎯 选号池 <span class="badge">v5.8.11 · 220 期按位回测</span></div>
         <div style="background:linear-gradient(135deg,rgba(110,240,158,.08),rgba(255,141,141,.08));border:1px solid rgba(110,240,158,.3);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text-2);line-height:1.8;">
           <div style="color:#6ef09e;font-weight:bold;font-size:13px;margin-bottom:6px;">🎯 220 期真实回测 · 定位杀才是真准!</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -837,6 +803,35 @@ window.FucaiMain = (function () {
     return `
       <div class="block">
         <div class="block-title">🧠 智能选号 <span class="badge">系统自动选</span></div>
+        ${_result && _result.typePredict && _result.typePredict.triggers && _result.typePredict.triggers.length > 0 ? (() => {
+          const tp = _result.typePredict;
+          const recMap = { zu3: '组三', zu6: '组六', mixed: '不限', baozi: '豹子' };
+          const recEmoji = { zu3: '🎯', zu6: '🎯', mixed: '✨', baozi: '🐆' };
+          const recColor = { zu3: '#f3c969', zu6: '#6ef09e', mixed: '#888', baozi: '#a78bfa' };
+          const recText = tp.recommend || 'mixed';
+          const bestTrig = tp.triggers.reduce((best, t) => (!best || t.rate > best.rate) ? t : best, null);
+          return `<div style="background:linear-gradient(135deg,rgba(110,240,158,.12),rgba(243,201,105,.06));border:1px solid rgba(110,240,158,.35);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="font-size:24px;">${recEmoji[recText]}</div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:12px;color:var(--text-3);margin-bottom:2px;">🔮 v5.8.13 预测下期形态(220 期回测)</div>
+              <div style="font-size:16px;font-weight:bold;color:${recColor[recText]};">
+                预测开 <span style="font-size:19px;">${recMap[recText]}</span>
+                ${recText === 'zu3' ? '<span style="font-size:11px;color:#888;font-weight:normal;">(3 数有重复,270 注)</span>' : ''}
+                ${recText === 'zu6' ? '<span style="font-size:11px;color:#888;font-weight:normal;">(3 数各不相同,720 注)</span>' : ''}
+              </div>
+              ${bestTrig ? `<div style="font-size:11px;color:var(--text-2);margin-top:3px;">主要依据: <b style="color:${bestTrig.lift >= 10 ? '#6ef09e' : '#f3c969'};">${bestTrig.name}</b> <span style="color:#888;">(${bestTrig.rate.toFixed(2)}% · +${bestTrig.lift.toFixed(2)})</span></div>` : ''}
+            </div>
+            <details style="font-size:11px;color:var(--text-3);cursor:pointer;">
+              <summary style="color:#f3c969;list-style:none;padding:4px 8px;background:rgba(0,0,0,.2);border-radius:4px;">展开 ${tp.triggers.length} 条 ▼</summary>
+              <div style="margin-top:6px;max-width:340px;">
+                ${tp.triggers.map(t => `<div style="padding:4px 6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:3px;display:flex;justify-content:space-between;gap:8px;">
+                  <span>${t.name}</span>
+                  <span><b style="color:${t.lift >= 10 ? '#6ef09e' : (t.lift >= 5 ? '#f3c969' : '#c8b890')};">${t.rate.toFixed(2)}%</b> <span style="color:#888;font-size:10px;">+${t.lift.toFixed(2)}</span></span>
+                </div>`).join('')}
+              </div>
+            </details>
+          </div>`;
+        })() : ''}
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
           勾选策略(可多选),系统会基于最近 30 期历史自动选<strong>形态/奇偶/大小/跨度</strong>。生成结果仅供娱乐参考。
         </div>
@@ -1380,32 +1375,9 @@ window.FucaiMain = (function () {
     });
   }
   function renderAxis() {
-    const { axis, ctx, zuxuanKill, typePredict } = _result;
-    // v5.8.13 正向预测形态 UI
+    const { axis, ctx, zuxuanKill } = _result;
+    // v5.8.13 预测形态块已挪到智能选号顶部(避免重复)
     let typePredictHTML = '';
-    if (typePredict && typePredict.triggers && typePredict.triggers.length > 0) {
-      const recMap = { zu3: '🎯 组三', zu6: '🎯 组六', mixed: '✨ 不限', baozi: '🐆 豹子' };
-      const recColor = { zu3: '#f3c969', zu6: '#6ef09e', mixed: '#888', baozi: '#a78bfa' };
-      const recText = typePredict.recommend || 'mixed';
-      const triggersHTML = typePredict.triggers.map(t => {
-        const color = t.lift >= 10 ? '#6ef09e' : (t.lift >= 5 ? '#f3c969' : '#c8b890');
-        return `<div class="zx-trigger" style="display:flex;gap:8px;align-items:center;font-size:11px;padding:3px 6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:3px;">
-          <span style="flex:1;">${t.name}</span>
-          <span style="color:${color};font-weight:bold;">${t.rate.toFixed(2)}%</span>
-          <span style="color:#888;font-size:10px;">+${t.lift.toFixed(2)}</span>
-        </div>`;
-      }).join('');
-      typePredictHTML = `<div class="v58-zuxuan" style="background:linear-gradient(135deg,rgba(110,240,158,.08),rgba(243,201,105,.05));border:1px solid rgba(110,240,158,.3);">
-        <div class="v58-zuxuan-title" style="color:#6ef09e;">🔮 v5.8.13 预测下期形态(220 期回测)</div>
-        <div class="v58-zuxuan-status" style="margin:8px 0;">
-          ✨ 预测下期开: <strong style="color:${recColor[recText]};font-size:15px;">${recMap[recText]}</strong>
-          ${recText === 'zu3' ? '<span style="font-size:11px;color:#888;">(3 数有重复,270 注)</span>' : ''}
-          ${recText === 'zu6' ? '<span style="font-size:11px;color:#888;">(3 数各不相同,720 注)</span>' : ''}
-        </div>
-        ${triggersHTML ? `<div class="v58-zuxuan-triggers">${triggersHTML}</div>` : ''}
-        <div style="font-size:10px;color:#888;margin-top:6px;border-top:1px dashed rgba(110,240,158,.2);padding-top:4px;">⚠️ 预测准确率 33-86%(220 期回测)· 不是 100% · 仅参考</div>
-      </div>`;
-    }
 
     // v5.8 杀组选 UI
     let zuxuanHTML = '';
