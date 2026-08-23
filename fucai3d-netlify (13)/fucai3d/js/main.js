@@ -1346,7 +1346,33 @@ window.FucaiMain = (function () {
     });
   }
   function renderAxis() {
-    const { axis, ctx, zuxuanKill } = _result;
+    const { axis, ctx, zuxuanKill, typePredict } = _result;
+    // v5.8.13 正向预测形态 UI
+    let typePredictHTML = '';
+    if (typePredict && typePredict.triggers && typePredict.triggers.length > 0) {
+      const recMap = { zu3: '🎯 组三', zu6: '🎯 组六', mixed: '✨ 不限', baozi: '🐆 豹子' };
+      const recColor = { zu3: '#f3c969', zu6: '#6ef09e', mixed: '#888', baozi: '#a78bfa' };
+      const recText = typePredict.recommend || 'mixed';
+      const triggersHTML = typePredict.triggers.map(t => {
+        const color = t.lift >= 10 ? '#6ef09e' : (t.lift >= 5 ? '#f3c969' : '#c8b890');
+        return `<div class="zx-trigger" style="display:flex;gap:8px;align-items:center;font-size:11px;padding:3px 6px;background:rgba(0,0,0,.2);border-radius:4px;margin-bottom:3px;">
+          <span style="flex:1;">${t.name}</span>
+          <span style="color:${color};font-weight:bold;">${t.rate.toFixed(2)}%</span>
+          <span style="color:#888;font-size:10px;">+${t.lift.toFixed(2)}</span>
+        </div>`;
+      }).join('');
+      typePredictHTML = `<div class="v58-zuxuan" style="background:linear-gradient(135deg,rgba(110,240,158,.08),rgba(243,201,105,.05));border:1px solid rgba(110,240,158,.3);">
+        <div class="v58-zuxuan-title" style="color:#6ef09e;">🔮 v5.8.13 预测下期形态(220 期回测)</div>
+        <div class="v58-zuxuan-status" style="margin:8px 0;">
+          ✨ 预测下期开: <strong style="color:${recColor[recText]};font-size:15px;">${recMap[recText]}</strong>
+          ${recText === 'zu3' ? '<span style="font-size:11px;color:#888;">(3 数有重复,270 注)</span>' : ''}
+          ${recText === 'zu6' ? '<span style="font-size:11px;color:#888;">(3 数各不相同,720 注)</span>' : ''}
+        </div>
+        ${triggersHTML ? `<div class="v58-zuxuan-triggers">${triggersHTML}</div>` : ''}
+        <div style="font-size:10px;color:#888;margin-top:6px;border-top:1px dashed rgba(110,240,158,.2);padding-top:4px;">⚠️ 预测准确率 33-86%(220 期回测)· 不是 100% · 仅参考</div>
+      </div>`;
+    }
+
     // v5.8 杀组选 UI
     let zuxuanHTML = '';
     if (zuxuanKill) {
@@ -1367,10 +1393,10 @@ window.FucaiMain = (function () {
         </div>`;
       }).join('');
       zuxuanHTML = `<div class="v58-zuxuan">
-        <div class="v58-zuxuan-title">🎲 v5.8 杀组选(200 期回测)</div>
+        <div class="v58-zuxuan-title">🚫 v5.8 杀组选(反向,200 期回测)</div>
         <div class="v58-zuxuan-status">${status.join(' ')}</div>
         <div class="v58-zuxuan-recommend">
-          💡 建议选: <strong style="color:${recColor[recText]};">${recommendMap[recText]}</strong>
+          💡 建议杀: <strong style="color:${recColor[recText]};">${recommendMap[recText]}</strong>
           ${recText === 'zu6' ? '(杀组三后,720 → 720 注组六)' : ''}
           ${recText === 'zu3' ? '(杀组六后,720 → 270 注组三)' : ''}
         </div>
@@ -1380,6 +1406,7 @@ window.FucaiMain = (function () {
     return `<div class="sub-block">
       <div class="sub-title">🔥 十位轴杀两码</div>
       <div style="font-size:13px;color:var(--text-2);">B=${ctx.B} → 杀掉 [${axis.axisNumbers.join(', ')}] = ${axis.killPairs.join(' / ')}</div>
+      ${typePredictHTML}
       ${zuxuanHTML}
     </div>`;
   }
