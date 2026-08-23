@@ -8,8 +8,8 @@
  */
 window.FucaiData = (function () {
   const data = {
-    // 下一期待开奖(尚未开奖)
-    next: { period: "2026212", drawTime: "2026-08-10 21:15:00" },
+    // 下一期待开奖(尚未开奖) — v5.8.14:由 latest.js 根据 history[0] 自动算
+    next: { period: "2026225", drawTime: "2026-08-23 21:15:00" },
     // 历史数据(最新在最上)
     history: [
       { p: "2026211", d: "2026-08-09", a: 7, b: 0, c: 8, sum: 15, span: 8, type: "组六" },
