@@ -65,14 +65,18 @@
         d: newest.d, sum: newest.sum, span: newest.span, type: newest.type
       };
     }
-    if (window.FucaiData.next && window.FucaiData.latest) {
-      const nextP = String(Number(window.FucaiData.latest.p) + 1);
+    if (window.FucaiData.next && (window.FucaiData.latest || (window.FucaiData.history && window.FucaiData.history.length > 0))) {
+      // v5.8.14 修:支持 history[0] 作为 latest 兜底(避免 next.period 硬编码不变)
+      const latestP = window.FucaiData.latest ? window.FucaiData.latest.p : window.FucaiData.history[0].p;
+      const latestD = window.FucaiData.latest ? window.FucaiData.latest.d : window.FucaiData.history[0].d;
+      const nextP = String(Number(latestP) + 1);
       window.FucaiData.next.p = nextP;
+      window.FucaiData.next.period = nextP;  // v5.8.14:同步更新 period(避免硬编码)
       // v5.8.8:同时更新 next.drawTime(基于最新期日期 +1 天 21:15)
       //   3D 每天 21:15 开奖(中国福利彩票)
       //   北京时间(UTC+8)
       try {
-        const lastDate = window.FucaiData.latest.d;  // 形如 "2026-08-14"
+        const lastDate = latestD;  // 形如 "2026-08-14"
         if (lastDate && /^\d{4}-\d{2}-\d{2}$/.test(lastDate)) {
           const [y, m, d] = lastDate.split('-').map(Number);
           const next = new Date(Date.UTC(y, m - 1, d + 1, 13, 15, 0));  // UTC 13:15 = 北京 21:15
