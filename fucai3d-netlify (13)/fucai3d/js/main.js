@@ -219,22 +219,6 @@ window.FucaiMain = (function () {
     localStorage.setItem('fucai3d_favorites', JSON.stringify(arr));
   }
   function clearFavorites() { localStorage.setItem('fucai3d_favorites', JSON.stringify([])); }
-  // 复制到剪贴板(降级:用 prompt 让用户手动复制)
-  function copyToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
-    }
-    return Promise.resolve(fallbackCopy(text));
-  }
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-    document.body.removeChild(ta);
-    return ok;
-  }
 
   function $(id) { return document.getElementById(id); }
   function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
@@ -244,14 +228,17 @@ window.FucaiMain = (function () {
     setTimeout(() => t.remove(), duration || 1800);
   }
 
-  // v5.8.9:统一复制到剪贴板(clipboard API + fallback)
+  // v5.8.9 统一复制到剪贴板(clipboard API + fallback),**返回 Promise 以兼容 .then()**
   function copyToClipboard(text, successMsg) {
     successMsg = successMsg || '📋 已复制';
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(
-        () => toast(successMsg),
+      return navigator.clipboard.writeText(text).then(
+        () => { toast(successMsg); return true; },
         () => fallbackCopy(text, successMsg)
       );
+    }
+    return Promise.resolve(fallbackCopy(text, successMsg));
+  }
     } else {
       fallbackCopy(text, successMsg);
     }
