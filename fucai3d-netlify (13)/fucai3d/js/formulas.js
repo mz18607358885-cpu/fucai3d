@@ -263,6 +263,78 @@ window.FucaiFormula = (function () {
   //   - 杀组六:跨度1-2 / 和尾9
   //   - 杀豹子:3数同012路
   // ════════════════════════════════════════════════
+  // v5.8.13 正向预测:预测下期开什么形态(220 期回测)
+  //   - 用上期 A/B/C/S/K 推下期形态(组三 / 组六 / 豹子)
+  //   - 每个 trigger 给权重 + 准确率(基于 220 期回测)
+  //   - 综合所有 trigger → recommend: 'zu3' | 'zu6' | 'baozi' | 'mixed'
+  // ════════════════════════════════════════════════
+  function predictType(ctx, history) {
+    const { A, B, C, S, K, history: hist } = ctx;
+    const W = S % 10;
+    const triggers = [];
+    let predictZu3 = 0;   // 权重(多个公式叠加)
+    let predictZu6 = 0;
+    let predictBZ  = 0;
+    const cur = hist ? hist[0] : null;
+    const prev1 = hist ? hist[1] : null;
+    const prev2 = hist ? hist[2] : null;
+    function getType(h) {
+      if (!h) return '';
+      if (h.a === h.b && h.b === h.c) return '豹子';
+      if (h.a === h.b || h.b === h.c || h.a === h.c) return '组三';
+      return '组六';
+    }
+    const typePrev1 = getType(prev1);
+    const typePrev2 = getType(prev2);
+
+    // ── 预测开组三(高准确率公式)─
+    if (K === 2) {
+      predictZu3 += 1.5;
+      triggers.push({ name: '跨度=2 → 预测开组三', weight: 1.5, rate: 42.86, baseline: 27.0, lift: 15.86 });
+    }
+    if (W === 9) {
+      predictZu3 += 1.2;
+      triggers.push({ name: '和尾=9 → 预测开组三', weight: 1.2, rate: 33.33, baseline: 27.0, lift: 6.33 });
+    }
+    if (K <= 3 && K > 0) {  // 跨度 1-3
+      predictZu3 += 0.8;
+      triggers.push({ name: `跨度${K}≤3 → 预测开组三`, weight: 0.8, rate: 31.88, baseline: 27.0, lift: 4.88 });
+    }
+
+    // ── 预测开组六(高准确率公式)─
+    if (W === 5) {
+      predictZu6 += 1.6;
+      triggers.push({ name: '和尾=5 → 预测开组六', weight: 1.6, rate: 86.21, baseline: 72.0, lift: 14.21 });
+    }
+    if (W === 0) {
+      predictZu6 += 1.5;
+      triggers.push({ name: '和尾=0 → 预测开组六', weight: 1.5, rate: 85.00, baseline: 72.0, lift: 13.00 });
+    }
+    if (K >= 5) {
+      predictZu6 += 0.8;
+      triggers.push({ name: `跨度${K}≥5 → 预测开组六`, weight: 0.8, rate: 73.95, baseline: 72.0, lift: 1.95 });
+    }
+    if (typePrev1 === '组三' && typePrev2 === '组三') {
+      predictZu6 += 1.0;
+      triggers.push({ name: '连2期组三 → 预测开组六', weight: 1.0, rate: 73.68, baseline: 72.0, lift: 1.68 });
+    }
+
+    // ── 预测开豹子(220 期 0 次,公式都没样本,先不列)─
+
+    // 推荐:取权重最大
+    let recommend = 'mixed';
+    let bestW = 0;
+    if (predictZu3 > predictZu6 && predictZu3 > bestW) { recommend = 'zu3'; bestW = predictZu3; }
+    if (predictZu6 > predictZu3 && predictZu6 > bestW) { recommend = 'zu6'; bestW = predictZu6; }
+    if (bestW === 0) recommend = 'mixed';
+
+    return {
+      predictZu3, predictZu6, predictBZ,
+      recommend,  // 'zu3' | 'zu6' | 'mixed'
+      triggers,
+    };
+  }
+  // ════════════════════════════════════════════════
   function killZuxuan(ctx, history) {
     const { A, B, C, S, K, history: hist } = ctx;
     const W = S % 10;
@@ -368,8 +440,10 @@ window.FucaiFormula = (function () {
     const axis = shiWeiZhouSha(ctx.B);
     // v5.8 杀组选
     const zuxuanKill = killZuxuan(ctx, history);
+    // v5.8.13 正向预测形态
+    const typePredict = predictType(ctx, history);
 
-    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis, zuxuanKill };
+    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis, zuxuanKill, typePredict };
   }
 
   // ════════════════════════════════════════════════
@@ -1055,6 +1129,8 @@ window.FucaiFormula = (function () {
     buildKillPool, buildDanPool, buildHeatMap, pairCodes, smartPick,
     getBacktestBadge, getBacktestSummary, BACKTEST,
     // v5.8 新导出
-    autoLearnWeights, computeColdNumber, killZuxuan, suggestKillContain
+    autoLearnWeights, computeColdNumber, killZuxuan, suggestKillContain,
+    // v5.8.13 正向预测形态
+    predictType
   };
 })();
