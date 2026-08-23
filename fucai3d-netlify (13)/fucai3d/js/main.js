@@ -239,10 +239,6 @@ window.FucaiMain = (function () {
     }
     return Promise.resolve(fallbackCopy(text, successMsg));
   }
-    } else {
-      fallbackCopy(text, successMsg);
-    }
-  }
   function fallbackCopy(text, successMsg) {
     const ta = document.createElement('textarea');
     ta.value = text;
