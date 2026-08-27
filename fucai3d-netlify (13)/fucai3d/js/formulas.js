@@ -1044,7 +1044,7 @@ window.FucaiFormula = (function () {
     '百×5+十×8取尾':         { rate: 26.40, base: 30, level: 'low',  killRate: 74.26, killBase: 72.9, killLevel: 'high', weight: 1.4,  baiRate: 90.37, shiRate: 87.16, geRate: 95.41 },  // ⭐⭐⭐ 选个位 95.41%
     '(和值-跨度)取尾':       { rate: 27.41, base: 30, level: 'low',  killRate: 73.27, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 90.83, shiRate: 88.07, geRate: 92.20 },
     '两期和尾相加取尾':      { rate: 27.41, base: 30, level: 'low',  killRate: 73.10, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 88.07, shiRate: 92.20, geRate: 91.28 },
-    '上期十位直接杀':         { rate: 24.37, base: 30, level: 'low',  killRate: 75.25, killBase: 72.9, killLevel: 'high', weight: 1.4,  baiRate: 90.83, shiRate: 92.66, geRate: 93.12 },  // ⭐ 选十位 92.66%
+    '上期十位直接杀':         { rate: 24.37, base: 30, level: 'low',  killRate: 75.25, killBase: 72.9, killLevel: 'high', weight: 1.4,  baiRate: 90.83, shiRate: 93.12, geRate: 93.12 },  // v5.8.15:shiRate 92.66→93.12
     '(跨度+个位)×3取尾':    { rate: 27.92, base: 30, level: 'low',  killRate: 71.29, killBase: 72.9, killLevel: 'mid',  weight: 0.9,  baiRate: 89.91, shiRate: 91.74, geRate: 88.07 },
     '十+个取尾杀下期':        { rate: 27.92, base: 30, level: 'low',  killRate: 71.79, killBase: 72.9, killLevel: 'low',  weight: 0.8,  baiRate: 89.91, shiRate: 89.45, geRate: 90.37 },
     '(A+C)取尾':             { rate: 30.46, base: 30, level: 'high', killRate: 69.31, killBase: 72.9, killLevel: 'low',  weight: 0.7,  baiRate: 89.45, shiRate: 85.78, geRate: 89.45 },
@@ -1053,6 +1053,11 @@ window.FucaiFormula = (function () {
     '和值+3取尾杀':          { rate: 26.80, base: 30, level: 'low',  killRate: 73.20, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 90.83, shiRate: 91.74, geRate: 92.20 },
     '大中小杀(B+2取尾)':    { rate: 27.10, base: 30, level: 'low',  killRate: 72.90, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 91.74, shiRate: 90.83, geRate: 90.83 },
     '期号尾数杀':            { rate: 26.50, base: 30, level: 'low',  killRate: 73.50, killBase: 72.9, killLevel: 'mid',  weight: 1.0,  baiRate: 89.91, shiRate: 90.37, geRate: 90.83 },
+    // v5.8.15 新增 选十位专用公式(220 期回测 +4.04% 提升)
+    '上期百位直接杀 [十]':    { rate: 0, base: 30, level: 'mid',  killRate: 0, killBase: 90, killLevel: 'mid', weight: 1.4, baiRate: 0, shiRate: 94.04, geRate: 0 },  // ⭐⭐ 选十位 94.04%
+    '跨度直接杀 [十]':       { rate: 0, base: 30, level: 'mid',  killRate: 0, killBase: 90, killLevel: 'mid', weight: 1.2, baiRate: 0, shiRate: 93.58, geRate: 0 },  // ⭐ 选十位 93.58%
+    '上期十位+1 [十]':       { rate: 0, base: 30, level: 'mid',  killRate: 0, killBase: 90, killLevel: 'mid', weight: 1.0, baiRate: 0, shiRate: 93.12, geRate: 0 },  // 选十位 93.12%
+    'A×B mod10 [十]':       { rate: 0, base: 30, level: 'mid',  killRate: 0, killBase: 90, killLevel: 'mid', weight: 1.0, baiRate: 0, shiRate: 94.04, geRate: 0 },  // ⭐ 选十位 94.04%
 
     // === 独胆(同上,选对率基准 30%) ===
     '(A×4+B×9+C×9+3)取尾':  { rate: 30.81, base: 30, level: 'high', killRate: 69.19, killBase: 72.9, killLevel: 'low',  weight: 0.7 },
