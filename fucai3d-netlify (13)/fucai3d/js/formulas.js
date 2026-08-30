@@ -414,13 +414,43 @@ window.FucaiFormula = (function () {
   //   杀 1 个数 = 排除所有含此数的号(1000 → 702 注)
   //   推荐公式:杀含(上期跨度+1)= 79.21% 杀对率
   // ════════════════════════════════════════════════
-  function suggestKillContain(ctx) {
+  // v5.8.15:杀组选推荐 — 优先用定位杀 92%+(90-95% 准),fallback 杀含某数(73-79%)
+  function suggestKillContain(ctx, killPool) {
+    // 1) 优先用定位杀 92%+ chip(每位取 92%+ 的号,去重)
+    if (killPool) {
+      const posHot = new Set();
+      const source = {};
+      ['bai', 'shi', 'ge'].forEach(pos => {
+        const list = killPool[pos] || [];
+        list.forEach(x => {
+          if (x.rate >= 92) {
+            posHot.add(x.code);
+            source[x.code] = (source[x.code] || []).concat([{pos, rate: x.rate}]);
+          }
+        });
+      });
+      if (posHot.size > 0) {
+        return Array.from(posHot).sort((a, b) => a - b).map(code => {
+          const src = source[code];
+          const bestSrc = src.reduce((b, s) => !b || s.rate > b.rate ? s : b, null);
+          const posLabel = { bai: '百位', shi: '十位', ge: '个位' }[bestSrc.pos];
+          return {
+            num: code,
+            name: `定位杀·${posLabel}`,
+            rate: bestSrc.rate,
+            weight: 1.5,
+            source: 'pos'
+          };
+        });
+      }
+    }
+    // 2) fallback:杀含某数公式(73-79%)
     const { K, S } = ctx;
     return [
-      { num: (K + 1) % 10, name: '杀含(上期跨度+1)', rate: 79.21, weight: 1.5 },
-      { num: (S + 3) % 10, name: '杀含(上期和值+3)', rate: 77.23, weight: 1.4 },
-      { num: (S % 10 + 1) % 10, name: '杀含(上期和尾+1)', rate: 76.24, weight: 1.2 },
-      { num: (ctx.A + K) % 10, name: '杀含(上期A+跨度)', rate: 73.76, weight: 1.0 }
+      { num: (K + 1) % 10, name: '杀含(上期跨度+1)', rate: 79.21, weight: 1.5, source: 'fallback' },
+      { num: (S + 3) % 10, name: '杀含(上期和值+3)', rate: 77.23, weight: 1.4, source: 'fallback' },
+      { num: (S % 10 + 1) % 10, name: '杀含(上期和尾+1)', rate: 76.24, weight: 1.2, source: 'fallback' },
+      { num: (ctx.A + K) % 10, name: '杀含(上期A+跨度)', rate: 73.76, weight: 1.0, source: 'fallback' }
     ];
   }
 
