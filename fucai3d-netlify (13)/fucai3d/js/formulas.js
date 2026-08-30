@@ -70,6 +70,11 @@ window.FucaiFormula = (function () {
       const prevPeriod = prev && prev.p ? +prev.p.slice(-1) : 0;
       result.push({ name: '期号尾数杀', code: mod10(prevPeriod + 1) });
     }
+    // v5.8.15 新增 选十位专用公式(220 期回测 94.04% 杀对率)
+    result.push({ name: '上期百位直接杀 [十]', code: A });        // 94.04%
+    result.push({ name: '跨度直接杀 [十]',      code: K });        // 93.58%
+    result.push({ name: '上期十位+1 [十]',      code: mod10(B + 1) });  // 93.12%
+    result.push({ name: 'A×B mod10 [十]',       code: mod10(A * B) });  // 94.04%
     return result;
   }
 
