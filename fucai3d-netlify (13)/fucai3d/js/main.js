@@ -887,14 +887,37 @@ window.FucaiMain = (function () {
                 <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 含此数的<strong>全部组三/组六</strong>都排除</span>
               </div>
               <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
-                ${[0,1,2,3,4,5,6,7,8,9].map(n => {
-                  const checked = (_pickState.killContain || []).includes(n);
-                  return `<button class="opt-btn xs ${checked ? 'on' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : ''}">${n}</button>`;
-                }).join('')}
+                ${(() => {
+                  // v5.8.15:从定位杀取 92%+ 数字,高亮显示
+                  const kp = _killPool;
+                  const posHot = new Set();
+                  ['bai', 'shi', 'ge'].forEach(pos => {
+                    const list = (kp && kp[pos]) || [];
+                    list.forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
+                  });
+                  return [0,1,2,3,4,5,6,7,8,9].map(n => {
+                    const checked = (_pickState.killContain || []).includes(n);
+                    const isHot = posHot.has(n);
+                    const hotBadge = isHot ? '⭐' : '';
+                    return `<button class="opt-btn xs ${checked ? 'on' : ''} ${isHot ? 'pos-hot' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : isHot ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.18);color:#ff8d8d;font-weight:800;box-shadow:0 0 6px rgba(255,141,141,.4);' : ''}" title="${isHot ? '⭐ 定位杀 ≥92%(推荐加入)' : ''}">${hotBadge}${n}</button>`;
+                  }).join('');
+                })()}
               </div>
-              <div style="font-size:11px;color:var(--text-3);margin-top:4px;">
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
                 💡 杀 1 个数:1000 → 702 注(-30%) · 杀 2 个:-54% · 杀 3 个:-73%<br>
                 ${(_pickState.killContain && _pickState.killContain.length > 0) ? `<strong style="color:#ff5060;">已选: ${_pickState.killContain.sort((a,b)=>a-b).join('、')}(共 ${_pickState.killContain.length} 个)</strong>` : '点击数字 = 加入杀组选(再次点击 = 取消)'}
+                ${(() => {
+                  // v5.8.15:一键加定位杀 92%+
+                  const kp = _killPool;
+                  if (!kp) return '';
+                  const posHot = new Set();
+                  ['bai', 'shi', 'ge'].forEach(pos => {
+                    const list = (kp[pos] || []);
+                    list.forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
+                  });
+                  if (posHot.size === 0) return '';
+                  return `<button class="opt-btn xs" data-kc-add-pos style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;padding:3px 8px;margin-left:auto;" title="一键加定位杀 92%+ 数字到杀组选">⭐ 定位杀 92%+ (${posHot.size}个)</button>`;
+                })()}
               </div>
               ${(() => {
                 // v5.8+ 推荐(根据当前期)
@@ -2014,6 +2037,30 @@ window.FucaiMain = (function () {
         if (!_pickState.killContain) _pickState.killContain = [];
         if (!_pickState.killContain.includes(n)) {
           _pickState.killContain.push(n);
+        }
+        switchTab('pick');
+      });
+    });
+    // v5.8.15:一键加定位杀 92%+
+    document.querySelectorAll('[data-kc-add-pos]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!_killPool) return;
+        if (!_pickState.killContain) _pickState.killContain = [];
+        const posHot = new Set();
+        ['bai', 'shi', 'ge'].forEach(pos => {
+          (_killPool[pos] || []).forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
+        });
+        let added = 0;
+        posHot.forEach(n => {
+          if (!_pickState.killContain.includes(n)) {
+            _pickState.killContain.push(n);
+            added++;
+          }
+        });
+        if (added > 0) {
+          toast(`⭐ 已加 ${added} 个定位杀 92%+ 数字到杀组选`);
+        } else {
+          toast('已全部加入(或 0 个 92%+ 数字)');
         }
         switchTab('pick');
       });
