@@ -601,16 +601,23 @@ window.FucaiMain = (function () {
     const col = (title, list, posKeyName) => {
       const items = list.map(x => {
         const conflicted = posKillMap[posKeyName].has(x.code);
-        const conflictBadge = conflicted ? '<span title="定位杀 ≥92% 也杀这个号" style="background:#ff5060;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:6px;">⚠️ 杀</span>' : '';
-        const itemStyle = conflicted ? 'border:1.5px solid #ff5060;background:rgba(255,80,96,.08);' : '';
-        return `<div class="dan-pool-item" style="${itemStyle}">
-          <span class="dan-pool-ball">${x.code}${conflictBadge}</span>
+        // 冲突号:用整块红色背景 + 强 ⛔ 图标(替代 chip 上的小角标,更清晰)
+        if (conflicted) {
+          return `<div class="dan-pool-item" style="border:2px solid #ff5060;background:rgba(255,80,96,.15);border-radius:6px;padding:5px 8px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
+            <span style="background:#ff5060;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;flex-shrink:0;">${x.code}</span>
+            <span style="font-size:11px;color:var(--text-2);flex:1;">${x.src.join(' / ')}</span>
+            <span title="定位杀 ≥92% 也杀这个号 → 选号时自动剔除" style="background:#ff5060;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:bold;flex-shrink:0;">⛔ 杀</span>
+          </div>`;
+        }
+        // 正常号:原 chip 样式
+        return `<div class="dan-pool-item">
+          <span class="dan-pool-ball">${x.code}</span>
           <span class="dan-pool-src">${x.src.join(' / ')}</span>
         </div>`;
       }).join('');
       // 统计冲突
       const conflictCount = list.filter(x => posKillMap[posKeyName].has(x.code)).length;
-      const conflictHint = conflictCount > 0 ? `<span style="font-size:10px;color:#ff5060;font-weight:bold;margin-left:6px;">⚠️ ${conflictCount} 个与定位杀冲突</span>` : '';
+      const conflictHint = conflictCount > 0 ? `<span style="font-size:11px;color:#ff5060;font-weight:bold;margin-left:8px;background:rgba(255,80,96,.15);padding:2px 8px;border-radius:4px;">⛔ ${conflictCount} 个被定位杀剔除</span>` : '';
       return `
         <div class="pool-col">
           <h4><span class="dot"></span>${title}${conflictHint}</h4>
@@ -629,10 +636,14 @@ window.FucaiMain = (function () {
       <div class="block">
         <div class="block-title">💎 胆码池 <span class="badge">按 百 / 十 / 个 三位汇总</span></div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
-          智能选号会<strong style="color:var(--dan);">优先</strong>从下方绿色号码里挑选。<span style="color:#888;">⚠️ 红色边 = 与定位杀 ≥92% 冲突(实际不会作为胆码)</span>
+          智能选号会<strong style="color:var(--dan);">优先</strong>从下方号码里挑选。<span style="color:#ff8d8d;">⛔ 红框 = 被定位杀 ≥92% 剔除(不会作为胆码)</span>
         </div>
-        ${conflictSummary.length > 0 ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:6px;font-size:12px;color:#ff8d8d;">
-          ⚠️ <b>定位杀 vs 胆码 冲突</b>:${conflictSummary.map(c => `${c.pos} ${c.codes.join('、')}`).join(' · ')} <span style="color:#888;">(系统会按"杀号优先"自动剔除,不影响选号)</span>
+        ${conflictSummary.length > 0 ? `<div style="margin-bottom:10px;padding:10px 14px;background:linear-gradient(90deg,rgba(255,80,96,.15),rgba(255,80,96,.05));border:2px solid #ff5060;border-radius:8px;font-size:13px;color:#ff8d8d;display:flex;align-items:center;gap:10px;">
+          <span style="background:#ff5060;color:#fff;width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">⛔</span>
+          <div style="flex:1;">
+            <div style="font-weight:bold;margin-bottom:2px;">${conflictSummary.length} 位与定位杀冲突</div>
+            <div style="font-size:11px;color:#ccc;">${conflictSummary.map(c => `<b style="color:#fff;">${c.pos}</b> 剔除 ${c.codes.join('、')}`).join(' · ')} · 系统已自动剔除(不影响选号)</div>
+          </div>
         </div>` : ''}
         <div class="pool-grid">
           ${col('百位胆码', dp.bai, 'bai')}
