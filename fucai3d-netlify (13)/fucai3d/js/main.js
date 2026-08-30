@@ -920,6 +920,20 @@ window.FucaiMain = (function () {
                 })()}
               </div>
               ${(() => {
+                // v5.8.15:杀组选 + 排除集合 冲突检测
+                const kcSet = new Set(_pickState.killContain || []);
+                const axisNums = (_killPool && _killPool.axis && _killPool.axis.axisNumbers) || [];
+                const shiqiweiKill = (_killPool && _killPool.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code);
+                const axisSet = new Set([...axisNums, ...shiqiweiKill]);
+                const overlap = [...kcSet].filter(n => axisSet.has(n));
+                const totalUnique = new Set([...kcSet, ...axisSet]).size;
+                if (kcSet.size === 0 && axisSet.size === 0) return '';
+                return `<div style="margin-top:8px;padding:6px 10px;background:rgba(110,240,158,.06);border:1px solid rgba(110,240,158,.2);border-radius:6px;font-size:11px;color:var(--text-2);">
+                  📊 <b>杀号汇总</b>:杀组选 <b style="color:#ff5060;">${kcSet.size}</b> 个 + 排除集合(十位轴) <b style="color:#f3c969;">${axisSet.size}</b> 个 = <b style="color:#6ef09e;">${totalUnique}</b> 个不重复
+                  ${overlap.length > 0 ? `<br>⚠️ <b style="color:#f3c969;">冲突 ${overlap.length} 个</b>:${overlap.sort((a,b)=>a-b).join('、')} <span style="color:#888;">(杀组选已全位覆盖,排除集合只加其他位的)</span>` : '<br>✅ 无冲突(两个杀的位不重叠)'}
+                </div>`;
+              })()}
+              ${(() => {
                 // v5.8+ 推荐(根据当前期,优先定位杀 92%+)
                 const suggests = FucaiFormula.suggestKillContain(_result.ctx, _killPool);
                 const curPeriod = (window.FucaiData && window.FucaiData.latest) ? window.FucaiData.latest.p : '?';
