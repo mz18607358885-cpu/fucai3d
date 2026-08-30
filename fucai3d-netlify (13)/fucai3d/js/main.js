@@ -588,30 +588,56 @@ window.FucaiMain = (function () {
   // ─── 胆码池 ───
   function renderDanPool() {
     const dp = _danPool;
-    const col = (title, list) => {
-      const items = list.map(x => `
-        <div class="dan-pool-item">
-          <span class="dan-pool-ball">${x.code}</span>
+    // v5.8.15:从定位杀取 92%+ 数字,该位与胆码冲突的标红
+    const kp = _killPool;
+    const posKillMap = { bai: new Set(), shi: new Set(), ge: new Set() };
+    if (kp) {
+      ['bai', 'shi', 'ge'].forEach(pos => {
+        (kp[pos] || []).forEach(x => { if (x.rate >= 92) posKillMap[pos].add(x.code); });
+      });
+    }
+    const posName = { bai: '百位', shi: '十位', ge: '个位' };
+    const posKey = { bai: 'bai', shi: 'shi', ge: 'ge' };
+    const col = (title, list, posKeyName) => {
+      const items = list.map(x => {
+        const conflicted = posKillMap[posKeyName].has(x.code);
+        const conflictBadge = conflicted ? '<span title="定位杀 ≥92% 也杀这个号" style="background:#ff5060;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:6px;">⚠️ 杀</span>' : '';
+        const itemStyle = conflicted ? 'border:1.5px solid #ff5060;background:rgba(255,80,96,.08);' : '';
+        return `<div class="dan-pool-item" style="${itemStyle}">
+          <span class="dan-pool-ball">${x.code}${conflictBadge}</span>
           <span class="dan-pool-src">${x.src.join(' / ')}</span>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
+      // 统计冲突
+      const conflictCount = list.filter(x => posKillMap[posKeyName].has(x.code)).length;
+      const conflictHint = conflictCount > 0 ? `<span style="font-size:10px;color:#ff5060;font-weight:bold;margin-left:6px;">⚠️ ${conflictCount} 个与定位杀冲突</span>` : '';
       return `
         <div class="pool-col">
-          <h4><span class="dot"></span>${title}</h4>
+          <h4><span class="dot"></span>${title}${conflictHint}</h4>
           <div class="dan-pool-list">${items || '<span class="empty-tag">无候选</span>'}</div>
         </div>
       `;
     };
+    // 总冲突汇总
+    const allDanCodes = new Set([...dp.bai, ...dp.shi, ...dp.ge].map(x => x.code));
+    const conflictSummary = [];
+    for (const [pos, killSet] of Object.entries(posKillMap)) {
+      const c = [...allDanCodes].filter(n => killSet.has(n));
+      if (c.length > 0) conflictSummary.push({ pos: posName[pos], codes: c });
+    }
     return `
       <div class="block">
         <div class="block-title">💎 胆码池 <span class="badge">按 百 / 十 / 个 三位汇总</span></div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
-          智能选号会<strong style="color:var(--dan);">优先</strong>从下方绿色号码里挑选。
+          智能选号会<strong style="color:var(--dan);">优先</strong>从下方绿色号码里挑选。<span style="color:#888;">⚠️ 红色边 = 与定位杀 ≥92% 冲突(实际不会作为胆码)</span>
         </div>
+        ${conflictSummary.length > 0 ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:6px;font-size:12px;color:#ff8d8d;">
+          ⚠️ <b>定位杀 vs 胆码 冲突</b>:${conflictSummary.map(c => `${c.pos} ${c.codes.join('、')}`).join(' · ')} <span style="color:#888;">(系统会按"杀号优先"自动剔除,不影响选号)</span>
+        </div>` : ''}
         <div class="pool-grid">
-          ${col('百位胆码', dp.bai)}
-          ${col('十位胆码', dp.shi)}
-          ${col('个位胆码', dp.ge)}
+          ${col('百位胆码', dp.bai, 'bai')}
+          ${col('十位胆码', dp.shi, 'shi')}
+          ${col('个位胆码', dp.ge, 'ge')}
         </div>
         <div class="pool-highlight" style="background:rgba(110,240,158,.1);border-color:rgba(110,240,158,.3);color:var(--dan);">
           🎯 主胆 = <strong>${dp.mainDan}</strong>(来自 2 个保留独胆公式)
