@@ -2487,11 +2487,25 @@ window.FucaiMain = (function () {
       toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改其他形态`);
       return;
     }
+    // v5.8.15:记录所有 possible unique 组合,确保尽量覆盖(target 选 N 注,但尽量选不同 unique)
+    const allPossibleKeys = new Set();
+    if (_pickState.type === 'zu6' || _pickState.type === 'mixed' || _pickState.type === 'dan') {
+      // 枚举所有 C(n, 3) unique 组六
+      for (let i = 0; i < restBai.length; i++) {
+        for (let j = i + 1; j < restBai.length; j++) {
+          for (let k = j + 1; k < restBai.length; k++) {
+            allPossibleKeys.add([restBai[i], restBai[j], restBai[k]].sort((x, y) => x - y).join(''));
+          }
+        }
+      }
+    }
+    let stuckCount = 0;  // v5.8.15:连续重复计数,触发强制 random
     while (picks.length < actualN && seen.size < maxUnique && safety < 50000) {
       safety++;
       let a, b, c, key;
-      // 防呆:如果前 100 次都没成功,且 seen 已经接近 totalCombos,改用纯 random
-      if (picks.length === 0 && safety > 50 && seen.size > 0) {
+      // v5.8.15:连续 5 次重复 → 强制 random(避免加权极端)
+      if (stuckCount >= 5) {
+        stuckCount = 0;
         a = restBai[Math.floor(Math.random() * restBai.length)];
         b = restShi[Math.floor(Math.random() * restShi.length)];
         c = restGe[Math.floor(Math.random() * restGe.length)];
@@ -2503,7 +2517,10 @@ window.FucaiMain = (function () {
       // v5.8.15:3D 组选不分位置,seen key 用号码集合(排序)而非位置
       //   例如 752 / 257 / 572 / 527 / 275 / 725 = 都是同一注
       key = [a, b, c].sort((x, y) => x - y).join('');
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        stuckCount++;
+        continue;
+      }
       // 检查 4 个约束
       if (!checkConstraints(a, b, c)) {
         skipByConstraint++;
@@ -2515,6 +2532,7 @@ window.FucaiMain = (function () {
         continue;
       }
       seen.add(key);
+      stuckCount = 0;
       const type = getTypeText(a, b, c);
       // 描述(为什么选这注)
       const desc = [];
