@@ -2538,9 +2538,22 @@ window.FucaiMain = (function () {
     if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
     if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
     if (maxUnique < _pickState.count) {
-      const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
-      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.size + shiqiweiKill.size} 个排除) 或改其他形态`);
-      return;
+      // v5.8.15:用户选了 N 注但 unique 不够 → 自动改 type=mixed(覆盖组三+组六+豹子)
+      const zu6Max = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
+      const zu3Max = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
+      const baoziMax = candLen >= 1 ? 1 : 0;
+      const mixedMax = zu6Max + zu3Max + baoziMax;
+      if (mixedMax >= _pickState.count) {
+        // 自动改 mixed,让更多 unique 可用
+        _pickState.type = 'mixed';
+        toast(`✨ 已自动改"混合"模式:候选 ${candLen} 个号 → ${Math.floor(mixedMax)} 注 unique(${Math.floor(zu6Max)} 组六 + ${Math.floor(zu3Max)} 组三 + ${Math.floor(baoziMax)} 豹子),够 ${_pickState.count} 注`);
+        // 重算 maxUnique
+        maxUnique = mixedMax;
+      } else {
+        const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
+        toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.size + shiqiweiKill.size} 个排除) 或改其他形态`);
+        return;
+      }
     }
     // v5.8.15:记录所有 possible unique 组合,确保尽量覆盖(target 选 N 注,但尽量选不同 unique)
     const allPossibleKeys = new Set();
