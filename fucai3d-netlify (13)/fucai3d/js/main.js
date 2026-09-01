@@ -2557,12 +2557,12 @@ window.FucaiMain = (function () {
       allUniqueKeys.push({ key, weight });
     }
     if (candLen >= 3 && (_pickState.type === 'zu6' || _pickState.type === 'mixed' || _pickState.type === 'dan')) {
-      // 枚举 C(n,3) 组六
+      // 枚举 C(n,3) 组六 — v5.8.15 修:key 用 comma 分隔(与组三一致)
       for (let i = 0; i < candLen; i++) {
         for (let j = i + 1; j < candLen; j++) {
           for (let k = j + 1; k < candLen; k++) {
             const a = restBai[i], b = restBai[j], c = restBai[k];
-            const key = [a, b, c].sort((x, y) => x - y).join('');
+            const key = [a, b, c].sort((x, y) => x - y).join(',');
             // 加权 = 3 个候选号权重之和(高权重 = 该组合优先级高)
             const w = (wBai.find(x => x.code === a)?.weight || 1)
                     + (wBai.find(x => x.code === b)?.weight || 1)
@@ -2589,8 +2589,8 @@ window.FucaiMain = (function () {
         }
       }
     }
-    if (candLen >= 1 && (_pickState.type === 'dan' || _pickState.type === 'mixed' || _pickState.type === 'zu3' || _pickState.type === 'zu6')) {
-      // 豹子: 选 1 个号 × 3
+    if (candLen >= 1 && (_pickState.type === 'dan' || _pickState.type === 'mixed' || _pickState.type === 'zu3')) {
+      // v5.8.15 修:豹子/组三只对 zu3/mixed/dan 枚举,zu6 只出组六
       for (let i = 0; i < candLen; i++) {
         const dup = restBai[i];
         const key = [dup, dup, dup].sort((x, y) => x - y).join(',');
