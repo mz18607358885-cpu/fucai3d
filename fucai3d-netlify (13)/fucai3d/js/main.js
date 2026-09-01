@@ -2459,6 +2459,14 @@ window.FucaiMain = (function () {
     const seen = new Set();
     let safety = 0;
     let skipByConstraint = 0;
+    // v5.8.15:提前算"实际可生成组六数"(避开约束太严的 toast 误导)
+    const candLen = restBai.length;
+    // 算 组六可生成数(restBai 选 3 不同) = C(n, 3)
+    const nCr3 = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
+    if (_pickState.type === 'zu6' && nCr3 < _pickState.count) {
+      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(nCr3)} 注组六,但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${kcSet.size} 个组选 + ${axisSet.size} 个排除) 或改"组三/混合"`);
+      return;
+    }
     while (picks.length < actualN && seen.size < totalCombos && safety < 50000) {
       safety++;
       const a = pickWeighted(wBai);
@@ -2471,7 +2479,7 @@ window.FucaiMain = (function () {
         skipByConstraint++;
         // 限制太多直接放弃
         if (skipByConstraint > 2000 && picks.length === 0) {
-          toast('⚠️ 约束太严,放宽后重试');
+          toast(`⚠️ 约束太严:跳过 ${skipByConstraint} 次仍无符合约束的组合。请减少"组六/奇偶/大小"限制或减少杀号数量`);
           return;
         }
         continue;
