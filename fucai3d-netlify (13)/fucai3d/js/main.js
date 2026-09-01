@@ -706,14 +706,12 @@ window.FucaiMain = (function () {
     // 提示标签
     const excludeInfo = `排除集:axis[${axisNums.join(',')}] + 上期十位[${shiqiweiKill.join(',')}]`;
 
-    // v5.7:候选号 = 可点击 → 加入我的杀号;用户杀号 = 可点击 → 恢复候选
-    // v5.7.14:系统杀的真排除 = 可点击 → 用户"反对",恢复成候选
-    // v5.7.19:反对 ≠ 恢复候选,反对 = 标记"我反对",选号时仍不选
-    const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="点击 → 加入我的杀号" style="cursor:pointer;">${n}</span>`;
-    const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="我的杀号,点击恢复" style="cursor:pointer;border-color:#ff5060;">${n}</span>`;
-    const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="系统杀,点击 → 我反对(取消系统杀,改为手动选)" style="cursor:pointer;border-color:#f3c969;border-style:dashed;">${n}</span>`;
+    // v5.8.15:候选/被杀 chip 视觉强化(加图标 + 显眼配色)
+    const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="✓ 候选号 · 点击 → 加入我的杀号(会排除)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
+    const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="🗑 我的杀号 · 点击 → 恢复候选" style="cursor:pointer;background:rgba(255,80,96,.2);border:2px solid #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🗑</span>${n}</span>`;
+    const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="🚫 系统杀 · 点击 → 我反对(恢复成候选)" style="cursor:pointer;background:rgba(255,80,96,.12);border:2px dashed #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;">🚫</span>${n}</span>`;
     // v5.7.19:反对的号(原系统杀 + 用户反对)— 半透明橙黄,标"反对"
-    const antiSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="我反对系统杀这个号,选号时会避开 · 点击 → 取消反对" style="cursor:pointer;border-color:#a07a3a;border-style:dotted;background:rgba(243,201,105,.05);color:#806040;text-decoration:line-through;">${n}</span>`;
+    const antiSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="⚠️ 我反对系统杀这个号 · 点击 → 取消反对" style="cursor:pointer;background:rgba(243,201,105,.1);border:2px dotted #a07a3a;color:#a07a3a;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">⚠️</span>${n}</span>`;
     const codeList = (arr) => arr.map(candSpan).join('') || '<span class="empty-tag">无</span>';
     const killList = (set, useMineSpan) => Array.from(set).sort().map(n => useMineSpan(n)).join('');
     const isLow = restBai.length <= 3 || restShi.length <= 3 || restGe.length <= 3;
@@ -1009,9 +1007,19 @@ window.FucaiMain = (function () {
         <!-- 候选预览 -->
         <div class="candidate-box">
           <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span>${excludeInfo} · <span style="color:#6ef09e;">候选</span>=可加杀 · <span style="color:#ff5060;">我的杀</span>=点击恢复 · <span style="color:#f3c969;border-bottom:1px dashed #f3c969;">系统杀</span>=点击反对 · <span style="color:#806040;border-bottom:1px dotted #806040;">反对</span>=取消反对</span>
-            ${userKills.size > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我加的 ${userKills.size} 个</button>` : ''}
-            ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除我反对的 ${userAntiKills.size} 个</button>` : ''}
+            <div>
+              <div style="margin-bottom:4px;">${excludeInfo}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:10px;">
+                <span style="background:rgba(110,240,158,.15);border:1.5px solid #6ef09e;color:#6ef09e;padding:2px 6px;border-radius:4px;font-weight:bold;">✓ 候选 = 点击 → 加杀</span>
+                <span style="background:rgba(255,80,96,.2);border:1.5px solid #ff5060;color:#ff5060;padding:2px 6px;border-radius:4px;font-weight:bold;text-decoration:line-through;">🗑 我的杀 = 点击恢复</span>
+                <span style="background:rgba(255,80,96,.12);border:1.5px dashed #ff5060;color:#ff5060;padding:2px 6px;border-radius:4px;font-weight:bold;">🚫 系统杀 = 点击反对</span>
+                <span style="background:rgba(243,201,105,.1);border:1.5px dotted #a07a3a;color:#a07a3a;padding:2px 6px;border-radius:4px;font-weight:bold;text-decoration:line-through;">⚠️ 反对 = 取消反对</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              ${userKills.size > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${userKills.size}</button>` : ''}
+              ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除反对 ${userAntiKills.size}</button>` : ''}
+            </div>
           </div>
           <div class="cand-col">
             <div class="cand-label">
