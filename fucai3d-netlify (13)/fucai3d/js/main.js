@@ -924,18 +924,32 @@ window.FucaiMain = (function () {
               </div>
               <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
                 ${(() => {
-                  // v5.8.15:从定位杀取 92%+ 数字,高亮显示
+                  // v5.8.15:从定位杀推荐取前 4(按 rate 降序)高亮显示
                   const kp = _killPool;
                   const posHot = new Set();
-                  ['bai', 'shi', 'ge'].forEach(pos => {
-                    const list = (kp && kp[pos]) || [];
-                    list.forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
-                  });
+                  if (kp) {
+                    // 收集所有 92%+ 数字
+                    const all = [];
+                    ['bai', 'shi', 'ge'].forEach(pos => {
+                      (kp[pos] || []).forEach(x => {
+                        if (x.rate >= 92) all.push({ code: x.code, rate: x.rate });
+                      });
+                    });
+                    // 按 rate 降序 + code 升序,去重取前 4
+                    all.sort((a, b) => b.rate - a.rate || a.code - b.code);
+                    const seen = new Set();
+                    for (const item of all) {
+                      if (seen.size >= 4) break;
+                      if (seen.has(item.code)) continue;
+                      seen.add(item.code);
+                      posHot.add(item.code);
+                    }
+                  }
                   return [0,1,2,3,4,5,6,7,8,9].map(n => {
                     const checked = (_pickState.killContain || []).includes(n);
                     const isHot = posHot.has(n);
                     const hotBadge = isHot ? '⭐' : '';
-                    return `<button class="opt-btn xs ${checked ? 'on' : ''} ${isHot ? 'pos-hot' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : isHot ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.18);color:#ff8d8d;font-weight:800;box-shadow:0 0 6px rgba(255,141,141,.4);' : ''}" title="${isHot ? '⭐ 定位杀 ≥92%(推荐加入)' : ''}">${hotBadge}${n}</button>`;
+                    return `<button class="opt-btn xs ${checked ? 'on' : ''} ${isHot ? 'pos-hot' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : isHot ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.18);color:#ff8d8d;font-weight:800;box-shadow:0 0 6px rgba(255,141,141,.4);' : ''}" title="${isHot ? '⭐ 定位杀推荐(前4准的)' : ''}">${hotBadge}${n}</button>`;
                   }).join('');
                 })()}
               </div>
