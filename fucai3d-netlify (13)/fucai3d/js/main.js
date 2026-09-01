@@ -20,7 +20,7 @@ window.FucaiMain = (function () {
   let _btMinRate = 30;    // 高置信度角标门槛(30=基准,35/40/45/50)
   let _shareQuery = '';   // v5.7.1:副链接查询关键词
   let _pickState = {
-    type: 'mixed',     // v5.7.16:系统自动选(混合)
+    type: 'zu6',       // v5.8.15:默认只要组六(号码不重复),更符合用户预期
     count: 5,
     strategies: ['A', 'B'],
     oddEven: 'mixed',  // 不限
@@ -2484,6 +2484,17 @@ window.FucaiMain = (function () {
     while (picks.length < n && picks.length > 0) {
       const t = picks[Math.floor(Math.random() * picks.length)];
       picks.push({ ...t, reason: t.reason + '·(复用)', source: 'duplicate-fill' });
+    }
+    // v5.8.15:最后去重(确保 50 注里**没有完全相同**的注)
+    const dedupedMap = new Map();
+    picks.forEach(p => {
+      const key = `${p.a}${p.b}${p.c}`;
+      if (!dedupedMap.has(key)) dedupedMap.set(key, p);
+    });
+    if (dedupedMap.size < picks.length) {
+      console.log(`[doGenerate] 去重 ${picks.length} → ${dedupedMap.size}`);
+      picks.length = 0;
+      picks.push(...dedupedMap.values());
     }
 
     // ─── 自学习:保存这一期选的号 ───
