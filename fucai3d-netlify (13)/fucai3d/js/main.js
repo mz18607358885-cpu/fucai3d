@@ -710,8 +710,9 @@ window.FucaiMain = (function () {
     const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="✓ 候选号 · 点击 → 加入我的杀号(会排除)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
     const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="🗑 我的杀号 · 点击 → 恢复候选" style="cursor:pointer;background:rgba(255,80,96,.2);border:2px solid #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🗑</span>${n}</span>`;
     const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="🚫 系统杀 · 点击 → 我反对(恢复成候选)" style="cursor:pointer;background:rgba(255,80,96,.12);border:2px dashed #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;">🚫</span>${n}</span>`;
-    // v5.7.19:反对的号(原系统杀 + 用户反对)— 半透明橙黄,标"反对"
-    const antiSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="⚠️ 我反对系统杀这个号 · 点击 → 取消反对" style="cursor:pointer;background:rgba(243,201,105,.1);border:2px dotted #a07a3a;color:#a07a3a;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">⚠️</span>${n}</span>`;
+    // v5.8.15:已反对/已恢复 → 绿虚线 + 白字(操作反馈:已表态)
+    const antiSpan = (n) => `<span class="opt-code anti-recovered" data-anti-rm="${n}" title="✅ 已反对系统杀 · 点击 → 取消反对" style="cursor:pointer;background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);"><span style="font-size:9px;color:#6ef09e;">✅</span>${n}</span>`;
+    const restoredSpan = (n) => `<span class="opt-code anti-recovered" data-uk-rm="${n}" title="✅ 已恢复候选 · 点击 → 重新加入我的杀号" style="cursor:pointer;background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);"><span style="font-size:9px;color:#6ef09e;">✅</span>${n}</span>`;
     const codeList = (arr) => arr.map(candSpan).join('') || '<span class="empty-tag">无</span>';
     const killList = (set, useMineSpan) => Array.from(set).sort().map(n => useMineSpan(n)).join('');
     const isLow = restBai.length <= 3 || restShi.length <= 3 || restGe.length <= 3;
@@ -2152,21 +2153,27 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
-    // 我的杀号点击 → 恢复
+    // v5.8.15:我的杀号点击 → 1.5 秒动画反馈(绿虚+白字"已恢复"),然后变绿实候选
     document.querySelectorAll('[data-uk-rm]').forEach(b => {
       b.addEventListener('click', () => {
         const code = +b.dataset.ukRm;
-        removeUserKill(code);
-        toast(`↺ ${code} 已恢复为候选`);
-        switchTab('pick');
+        // 立刻显示 ✅ 绿虚+白 反馈(1.5 秒)
+        b.style.cssText = 'background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);';
+        b.innerHTML = `<span style="font-size:9px;color:#6ef09e;">✅</span>${code}`;
+        b.title = '✅ 已恢复 · 1.5 秒后变成绿实候选';
+        setTimeout(() => {
+          removeUserKill(code);
+          toast(`✅ ${code} 已恢复为候选`);
+          switchTab('pick');
+        }, 800);
       });
     });
-    // v5.7.14:系统杀的真排除点击 → 恢复成候选(用户反对)
+    // v5.8.15:系统杀点击 → 立刻显示 ✅ 反对(绿虚+白 持久)
     document.querySelectorAll('[data-anti-rm]').forEach(b => {
       b.addEventListener('click', () => {
         const code = +b.dataset.antiRm;
         addUserAntiKill(code);
-        toast(`✋ ${code} 反对系统杀(恢复为候选)`);
+        toast(`✋ ${code} 已反对(恢复为候选)`);
         switchTab('pick');
       });
     });
