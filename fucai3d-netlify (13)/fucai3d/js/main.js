@@ -659,7 +659,7 @@ window.FucaiMain = (function () {
   }
 
   // ─── 智能选号(多策略 + 多约束 + 定位复式) ───
-  // v5.8.15:辅助函数 — 算定位杀推荐(前 4 个最高准确率)
+  // v5.8.15:辅助函数 — 算定位杀推荐(前 4 个最高准确率,只高亮不自动加)
   function getPosHotTop4() {
     const kp = _killPool;
     if (!kp) return [];
@@ -682,12 +682,7 @@ window.FucaiMain = (function () {
   }
 
   function renderSmartPick() {
-    // v5.8.15:渲染时自动把定位杀推荐 4 个加入杀组选(只加一次,避免重复)
-    const posHot = getPosHotTop4();
-    if (!_pickState.killContain) _pickState.killContain = [];
-    posHot.forEach(n => {
-      if (!_pickState.killContain.includes(n)) _pickState.killContain.push(n);
-    });
+    // v5.8.15:0-9 chip 是显示推荐,要用户自己点才算杀 — 不自动加入 killContain
     const kp = _killPool;
     // v5.7 方案 B:候选 = 0-9 - 真排除集 - 用户手动杀号
     //   真排除集 = axisNumbers(3) + 上期十位直接杀(1)
