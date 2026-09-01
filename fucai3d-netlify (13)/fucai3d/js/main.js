@@ -2464,7 +2464,7 @@ window.FucaiMain = (function () {
     // 算 组六可生成数(restBai 选 3 不同) = C(n, 3)
     const nCr3 = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
     if (_pickState.type === 'zu6' && nCr3 < _pickState.count) {
-      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(nCr3)} 注组六,但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${kcSet.size} 个组选 + ${axisSet.size} 个排除) 或改"组三/混合"`);
+      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(nCr3)} 注组六,但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改"组三/混合"`);
       return;
     }
     while (picks.length < actualN && seen.size < totalCombos && safety < 50000) {
