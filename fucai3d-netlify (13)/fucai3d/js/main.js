@@ -2603,12 +2603,16 @@ window.FucaiMain = (function () {
     // 转回 (a, b, c)
     for (const u of targetUnique) {
       const arr = u.key.split(',').map(Number);
-      // a b c 顺序:按 weight 高的号放前面(或 random 排)
-      const a = arr[0], b = arr[1], c = arr[2];
+      // v5.8.15 修:3D 组选/组三/豹子 都**不分位置**,desc 不写"百/十/个"
+      const [a, b, c] = arr;
       const type = (a === b && b === c) ? '豹子' : (a === b || b === c || a === c) ? '组三' : '组六';
       const desc = [`${type}`];
-      if (hotBoth.has(a) || hot4Only.has(a)) desc.push(`百${a}热`);
-      if (pairBai.has(a)) desc.push(`百${a}对码`);
+      // 号码属性(无位置): X热 / X对码
+      [a, b, c].forEach(n => {
+        if (hotBoth.has(n) || hot4Only.has(n)) desc.push(`${n}热`);
+        else if (hot30.has(n)) desc.push(`${n}中热`);
+        if (pairBai.has(n) || pairShi.has(n) || pairGe.has(n)) desc.push(`${n}对码`);
+      });
       picks.push({
         a, b, c, type, reason: desc.join('·'),
         period: window.FucaiData.next ? window.FucaiData.next.period : '?',
