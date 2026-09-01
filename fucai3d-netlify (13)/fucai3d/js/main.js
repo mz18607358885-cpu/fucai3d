@@ -2495,7 +2495,9 @@ window.FucaiMain = (function () {
         b = pickWeighted(wShi);
         c = pickWeighted(wGe);
       }
-      key = `${a}${b}${c}`;
+      // v5.8.15:3D 组选不分位置,seen key 用号码集合(排序)而非位置
+      //   例如 752 / 257 / 572 / 527 / 275 / 725 = 都是同一注
+      key = [a, b, c].sort((x, y) => x - y).join('');
       if (seen.has(key)) continue;
       // 检查 4 个约束
       if (!checkConstraints(a, b, c)) {
@@ -2534,7 +2536,8 @@ window.FucaiMain = (function () {
     // v5.8.15:最后去重(确保 50 注里**没有完全相同**的注)
     const dedupedMap = new Map();
     picks.forEach(p => {
-      const key = `${p.a}${p.b}${p.c}`;
+      // v5.8.15:3D 组选不分位置,用号码集合去重(752/257/572 = 同一注)
+      const key = [p.a, p.b, p.c].sort((x, y) => x - y).join('');
       if (!dedupedMap.has(key)) dedupedMap.set(key, p);
     });
     if (dedupedMap.size < picks.length) {
