@@ -420,6 +420,7 @@ window.FucaiFormula = (function () {
   //   推荐公式:杀含(上期跨度+1)= 79.21% 杀对率
   // ════════════════════════════════════════════════
   // v5.8.15:杀组选推荐 — 优先用定位杀 92%+(90-95% 准),fallback 杀含某数(73-79%)
+  // v5.8.15+:只返回准确率最高的 4 个,避免推荐太多让用户选择疲劳
   function suggestKillContain(ctx, killPool) {
     // 1) 优先用定位杀 92%+ chip(每位取 92%+ 的号,去重)
     if (killPool) {
@@ -435,7 +436,8 @@ window.FucaiFormula = (function () {
         });
       });
       if (posHot.size > 0) {
-        return Array.from(posHot).sort((a, b) => a - b).map(code => {
+        // 按准确率降序 + 数字升序,只取前 4
+        const all = Array.from(posHot).map(code => {
           const src = source[code];
           const bestSrc = src.reduce((b, s) => !b || s.rate > b.rate ? s : b, null);
           const posLabel = { bai: '百位', shi: '十位', ge: '个位' }[bestSrc.pos];
@@ -447,9 +449,11 @@ window.FucaiFormula = (function () {
             source: 'pos'
           };
         });
+        all.sort((a, b) => b.rate - a.rate || a.num - b.num);
+        return all.slice(0, 4);
       }
     }
-    // 2) fallback:杀含某数公式(73-79%)
+    // 2) fallback:杀含某数公式(73-79%) — 已经只有 4 个,直接返回
     const { K, S } = ctx;
     return [
       { num: (K + 1) % 10, name: '杀含(上期跨度+1)', rate: 79.21, weight: 1.5, source: 'fallback' },
