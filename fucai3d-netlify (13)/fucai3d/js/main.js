@@ -674,9 +674,10 @@ window.FucaiMain = (function () {
     const userKills = new Set(getUserKills());  // 用户手动杀号
     const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀
     // v5.7.19:反对 ≠ 恢复成候选,反对 = 标记"我反对这个号被杀",但**选号时不选**
-    //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀
+    //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀 - 杀组选
     //   反对的号 显示在"反对区"(虚线橙黄),不进绿色候选
-    const allExclude = new Set([...realExclude, ...userKills]);
+    const killContainSetUI = new Set(_pickState.killContain || []);
+    const allExclude = new Set([...realExclude, ...userKills, ...killContainSetUI]);
     const candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
     const restBai = [...candidates];
     const restShi = [...candidates];
