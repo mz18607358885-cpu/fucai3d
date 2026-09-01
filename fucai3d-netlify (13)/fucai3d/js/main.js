@@ -2476,13 +2476,18 @@ window.FucaiMain = (function () {
     let skipByConstraint = 0;
     // v5.8.15:提前算"实际可生成组六数"(避开约束太严的 toast 误导)
     const candLen = restBai.length;
-    // 算 组六可生成数(restBai 选 3 不同) = C(n, 3)
-    const nCr3 = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
-    if (_pickState.type === 'zu6' && nCr3 < _pickState.count) {
-      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(nCr3)} 注组六,但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改"组三/混合"`);
+    // v5.8.15:根据 type 算 max unique(组六 / 组三 / 混合)
+    let maxUnique = 0;
+    if (candLen >= 3) maxUnique += candLen * (candLen-1) * (candLen-2) / 6;  // 组六 C(n,3)
+    if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);  // 组三 C(n,2)*(n-2)
+    if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
+    if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
+    if (maxUnique < _pickState.count) {
+      const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
+      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改其他形态`);
       return;
     }
-    while (picks.length < actualN && seen.size < nCr3 && safety < 50000) {
+    while (picks.length < actualN && seen.size < maxUnique && safety < 50000) {
       safety++;
       let a, b, c, key;
       // 防呆:如果前 100 次都没成功,且 seen 已经接近 totalCombos,改用纯 random
