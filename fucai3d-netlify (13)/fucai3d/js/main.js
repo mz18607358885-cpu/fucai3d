@@ -659,7 +659,35 @@ window.FucaiMain = (function () {
   }
 
   // ─── 智能选号(多策略 + 多约束 + 定位复式) ───
+  // v5.8.15:辅助函数 — 算定位杀推荐(前 4 个最高准确率)
+  function getPosHotTop4() {
+    const kp = _killPool;
+    if (!kp) return [];
+    const all = [];
+    ['bai', 'shi', 'ge'].forEach(pos => {
+      (kp[pos] || []).forEach(x => {
+        if (x.rate >= 92) all.push({ code: x.code, rate: x.rate });
+      });
+    });
+    all.sort((a, b) => b.rate - a.rate || a.code - b.code);
+    const seen = new Set();
+    const top4 = [];
+    for (const item of all) {
+      if (top4.length >= 4) break;
+      if (seen.has(item.code)) continue;
+      seen.add(item.code);
+      top4.push(item.code);
+    }
+    return top4;
+  }
+
   function renderSmartPick() {
+    // v5.8.15:渲染时自动把定位杀推荐 4 个加入杀组选(只加一次,避免重复)
+    const posHot = getPosHotTop4();
+    if (!_pickState.killContain) _pickState.killContain = [];
+    posHot.forEach(n => {
+      if (!_pickState.killContain.includes(n)) _pickState.killContain.push(n);
+    });
     const kp = _killPool;
     // v5.7 方案 B:候选 = 0-9 - 真排除集 - 用户手动杀号
     //   真排除集 = axisNumbers(3) + 上期十位直接杀(1)
