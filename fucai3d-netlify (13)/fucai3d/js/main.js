@@ -2548,17 +2548,74 @@ window.FucaiMain = (function () {
       toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.size + shiqiweiKill.size} 个排除) 或${hint}`);
       return;
     }
-    // v5.8.15:记录所有 possible unique 组合,确保尽量覆盖(target 选 N 注,但尽量选不同 unique)
-    const allPossibleKeys = new Set();
-    if (_pickState.type === 'zu6' || _pickState.type === 'mixed' || _pickState.type === 'dan') {
-      // 枚举所有 C(n, 3) unique 组六
-      for (let i = 0; i < restBai.length; i++) {
-        for (let j = i + 1; j < restBai.length; j++) {
-          for (let k = j + 1; k < restBai.length; k++) {
-            allPossibleKeys.add([restBai[i], restBai[j], restBai[k]].sort((x, y) => x - y).join(''));
+    // v5.8.15:枚举所有 unique 组合(确保选 N 注 = N unique,不漏)
+    //   先枚举所有 C(n,3) 组六 / C(n,2)*(n-2) 组三 / 1 豹子
+    //   然后按权重 random 排序,选前 N 个
+    const allUniqueKeys = [];  // {key, weight, code}
+    function addUnique(key, weight) {
+      if (allUniqueKeys.find(x => x.key === key)) return;
+      allUniqueKeys.push({ key, weight });
+    }
+    if (candLen >= 3 && (_pickState.type === 'zu6' || _pickState.type === 'mixed' || _pickState.type === 'dan')) {
+      // 枚举 C(n,3) 组六
+      for (let i = 0; i < candLen; i++) {
+        for (let j = i + 1; j < candLen; j++) {
+          for (let k = j + 1; k < candLen; k++) {
+            const a = restBai[i], b = restBai[j], c = restBai[k];
+            const key = [a, b, c].sort((x, y) => x - y).join('');
+            // 加权 = 3 个候选号权重之和(高权重 = 该组合优先级高)
+            const w = (wBai.find(x => x.code === a)?.weight || 1)
+                    + (wBai.find(x => x.code === b)?.weight || 1)
+                    + (wBai.find(x => x.code === c)?.weight || 1);
+            addUnique(key, w);
           }
         }
       }
+    }
+    if (candLen >= 2 && (_pickState.type === 'zu3' || _pickState.type === 'mixed' || _pickState.type === 'dan')) {
+      // 枚举 C(n,2)*(n-2) 组三(选 2 同 + 1 不同)
+      for (let i = 0; i < candLen; i++) {
+        for (let j = i + 1; j < candLen; j++) {
+          const dup = restBai[i];  // 重复号
+          for (let k = 0; k < candLen; k++) {
+            if (k === i || k === j) continue;  // 跳过重复
+            const other = restBai[k];
+            // 组三:{dup, dup, other} (dup=restBai[i] 出现 2 次)
+            // 排序后 unique 是 {dup, dup, other}
+            const arr = [dup, dup, other].sort((x, y) => x - y);
+            const key = arr.join(',');
+            addUnique(key, 1);
+          }
+        }
+      }
+    }
+    if (candLen >= 1 && (_pickState.type === 'dan' || _pickState.type === 'mixed' || _pickState.type === 'zu3' || _pickState.type === 'zu6')) {
+      // 豹子: 选 1 个号 × 3
+      for (let i = 0; i < candLen; i++) {
+        const dup = restBai[i];
+        const key = [dup, dup, dup].sort((x, y) => x - y).join(',');
+        addUnique(key, 0.3);  // 豹子权重低
+      }
+    }
+    // 按权重降序 + random 抖动,选前 N 个
+    allUniqueKeys.sort((a, b) => (b.weight + Math.random() * 0.5) - (a.weight + Math.random() * 0.5));
+    const targetUnique = allUniqueKeys.slice(0, _pickState.count);
+    // 转回 (a, b, c)
+    for (const u of targetUnique) {
+      const arr = u.key.split(',').map(Number);
+      // a b c 顺序:按 weight 高的号放前面(或 random 排)
+      const a = arr[0], b = arr[1], c = arr[2];
+      const type = (a === b && b === c) ? '豹子' : (a === b || b === c || a === c) ? '组三' : '组六';
+      const desc = [`${type}`];
+      if (hotBoth.has(a) || hot4Only.has(a)) desc.push(`百${a}热`);
+      if (pairBai.has(a)) desc.push(`百${a}对码`);
+      picks.push({
+        a, b, c, type, reason: desc.join('·'),
+        period: window.FucaiData.next ? window.FucaiData.next.period : '?',
+        source: 'unique-enum-v5.8.15'
+      });
+      seen.add(u.key);
+      if (picks.length >= actualN) break;
     }
     let stuckCount = 0;  // v5.8.15:连续重复计数,触发强制 random
     while (picks.length < actualN && seen.size < maxUnique && safety < 50000) {
