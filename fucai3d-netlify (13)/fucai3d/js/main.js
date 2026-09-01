@@ -2483,10 +2483,18 @@ window.FucaiMain = (function () {
     }
     while (picks.length < actualN && seen.size < totalCombos && safety < 50000) {
       safety++;
-      const a = pickWeighted(wBai);
-      const b = pickWeighted(wShi);
-      const c = pickWeighted(wGe);
-      const key = `${a}${b}${c}`;
+      let a, b, c, key;
+      // 防呆:如果前 100 次都没成功,且 seen 已经接近 totalCombos,改用纯 random
+      if (picks.length === 0 && safety > 50 && seen.size > 0) {
+        a = restBai[Math.floor(Math.random() * restBai.length)];
+        b = restShi[Math.floor(Math.random() * restShi.length)];
+        c = restGe[Math.floor(Math.random() * restGe.length)];
+      } else {
+        a = pickWeighted(wBai);
+        b = pickWeighted(wShi);
+        c = pickWeighted(wGe);
+      }
+      key = `${a}${b}${c}`;
       if (seen.has(key)) continue;
       // 检查 4 个约束
       if (!checkConstraints(a, b, c)) {
