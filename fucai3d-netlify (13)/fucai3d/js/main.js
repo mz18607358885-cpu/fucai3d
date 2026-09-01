@@ -1009,6 +1009,7 @@ window.FucaiMain = (function () {
           <div class="opt-row">
             <span class="opt-mini-label">注数:</span>
             ${countBtn(1)}${countBtn(3)}${countBtn(5)}${countBtn(10)}${countBtn(20)}${countBtn(50)}
+            <button class="opt-btn small" id="selectAllCount" style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:bold;margin-left:8px;" title="按当前候选数自动算 maxUnique(组六 C(n,3) 或 组三 C(n,2)*(n-2)),一键全选所有可能组合">🎯 全选 (maxUnique)</button>
           </div>
           <div class="opt-row">
             <button class="share-btn big" id="genBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg-2);">
@@ -2056,6 +2057,37 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-pick-count]').forEach(b => {
       b.addEventListener('click', () => { _pickState.count = +b.dataset.pickCount; switchTab('pick'); });
     });
+    // v5.8.15:全选 maxUnique 按钮(根据当前候选数自动算最大可能组合)
+    const selectAllBtn = document.querySelector('#selectAllCount');
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', () => {
+        // 算当前候选数(从排除集合 + 杀组选 + 我的杀算)
+        const kp = _killPool;
+        if (!kp) { toast('⚠️ 数据未加载'); return; }
+        const axisNums = new Set((kp.axis && kp.axis.axisNumbers) || []);
+        const shiqiweiKill = new Set((kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code));
+        const realExclude = new Set([...axisNums, ...shiqiweiKill]);
+        const userKills = new Set(getUserKills());
+        const killContainSet = new Set(_pickState.killContain || []);
+        const allExclude = new Set([...realExclude, ...userKills, ...killContainSet]);
+        const candLen = [0,1,2,3,4,5,6,7,8,9].filter(n => !allExclude.has(n)).length;
+        // 算 maxUnique
+        let maxUnique = 0;
+        if (candLen >= 3) maxUnique += candLen * (candLen-1) * (candLen-2) / 6;
+        if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);
+        if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
+        if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
+        if (maxUnique === 0) {
+          toast(`⚠️ 候选 ${candLen} 个号不够组${_pickState.type === 'zu6' ? '六' : (_pickState.type === 'zu3' ? '三' : '六/三')} (至少 3 个 / 2 个)`);
+          return;
+        }
+        // 限 50 注(避免 1 次生成太多)
+        const target = Math.min(Math.floor(maxUnique), 50);
+        _pickState.count = target;
+        toast(`🎯 全选:候选 ${candLen} 个号 → 自动选 ${target} 注 (${_pickState.type})`);
+        switchTab('pick');
+      });
+    }
     // 奇偶
     document.querySelectorAll('[data-oe]').forEach(b => {
       b.addEventListener('click', () => { _pickState.oddEven = b.dataset.oe; switchTab('pick'); });
