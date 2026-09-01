@@ -2539,7 +2539,7 @@ window.FucaiMain = (function () {
     if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
     if (maxUnique < _pickState.count) {
       const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
-      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改其他形态`);
+      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.size + shiqiweiKill.size} 个排除) 或改其他形态`);
       return;
     }
     // v5.8.15:记录所有 possible unique 组合,确保尽量覆盖(target 选 N 注,但尽量选不同 unique)
