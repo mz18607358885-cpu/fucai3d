@@ -2482,7 +2482,7 @@ window.FucaiMain = (function () {
       toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(nCr3)} 注组六,但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.length + shiqiweiKill.size} 个排除) 或改"组三/混合"`);
       return;
     }
-    while (picks.length < actualN && seen.size < totalCombos && safety < 50000) {
+    while (picks.length < actualN && seen.size < nCr3 && safety < 50000) {
       safety++;
       let a, b, c, key;
       // 防呆:如果前 100 次都没成功,且 seen 已经接近 totalCombos,改用纯 random
