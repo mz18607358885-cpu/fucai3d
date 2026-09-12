@@ -27,6 +27,7 @@ window.FucaiMain = (function () {
     bigSmall: 'mixed', // 不限
     spanMin: 0,
     spanMax: 9,
+    spanSet: [0,1,2,3,4,5,6,7,8,9],  // v5.8.15:跨度 Set 模式(支持任意范围,默认全选)
     loose: false,      // 严格
     highConfOnly: false,  // v5.7.16:用全部公式
     killContain: [],   // v5.8+:杀组选(0-9 多选,含此数的全部排除)
@@ -768,7 +769,8 @@ window.FucaiMain = (function () {
     // 跨度选择
     const spanBtns = [];
     for (let i = 0; i <= 9; i++) {
-      const on = (i >= _pickState.spanMin && i <= _pickState.spanMax);
+      // v5.8.15:跨度 chip 按 spanSet 渲染(支持任意范围)
+      const on = (_pickState.spanSet || []).includes(i);
       spanBtns.push(`<button class="opt-btn xs ${on ? 'on' : ''}" data-span="${i}">${i}</button>`);
     }
 
@@ -2119,24 +2121,25 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-bs]').forEach(b => {
       b.addEventListener('click', () => { _pickState.bigSmall = b.dataset.bs; switchTab('pick'); });
     });
-    // v5.8.15 跨度 chip:点 = 切换 on/off(支持任意范围,不再只能改边界)
+    // v5.8.15 跨度 chip Set 模式:点 = 切换 on/off(支持任意范围,默认全选)
     document.querySelectorAll('[data-span]').forEach(b => {
       b.addEventListener('click', () => {
         const v = +b.dataset.span;
-        const clickedOn = b.classList.contains('on');
-        if (clickedOn) {
-          // 关闭 v:缩边界
-          if (_pickState.spanMin === _pickState.spanMax) return;  // 只剩 1 个不能关
-          if (v === _pickState.spanMin) _pickState.spanMin = v + 1;
-          else if (v === _pickState.spanMax) _pickState.spanMax = v - 1;
+        if (!_pickState.spanSet) _pickState.spanSet = [0,1,2,3,4,5,6,7,8,9];
+        const idx = _pickState.spanSet.indexOf(v);
+        if (idx >= 0) {
+          // 已选 → 取消(但要留至少 1 个)
+          if (_pickState.spanSet.length <= 1) return;
+          _pickState.spanSet.splice(idx, 1);
         } else {
-          // 开启 v:扩边界
-          if (v < _pickState.spanMin) _pickState.spanMin = v;
-          else if (v > _pickState.spanMax) _pickState.spanMax = v;
+          // 未选 → 加入
+          _pickState.spanSet.push(v);
+          _pickState.spanSet.sort((a, b) => a - b);
         }
-        // 防止翻转
-        if (_pickState.spanMin > _pickState.spanMax) {
-          const t = _pickState.spanMin; _pickState.spanMin = _pickState.spanMax; _pickState.spanMax = t;
+        // 同步 spanMin / spanMax(兼容老 checkConstraints)
+        if (_pickState.spanSet.length > 0) {
+          _pickState.spanMin = _pickState.spanSet[0];
+          _pickState.spanMax = _pickState.spanSet[_pickState.spanSet.length - 1];
         }
         switchTab('pick');
       });
@@ -2520,9 +2523,10 @@ window.FucaiMain = (function () {
         const [w1, w2, w3] = want.split('');
         if (!map[w1](a) || !map[w2](b) || !map[w3](c)) return false;
       }
-      // 跨度
+      // 跨度(v5.8.15:用 spanSet,支持任意范围 0-5 / 2-7 / 7 / 等)
       const span = Math.max(a, b, c) - Math.min(a, b, c);
-      if (span < _pickState.spanMin || span > _pickState.spanMax) return false;
+      const spanSet = _pickState.spanSet || [0,1,2,3,4,5,6,7,8,9];
+      if (!spanSet.includes(span)) return false;
       return true;
     }
     function getTypeText(a, b, c) {
