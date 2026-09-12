@@ -2119,14 +2119,22 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-bs]').forEach(b => {
       b.addEventListener('click', () => { _pickState.bigSmall = b.dataset.bs; switchTab('pick'); });
     });
-    // 跨度
+    // v5.8.15 跨度 chip:点 = 切换 on/off(支持任意范围,不再只能改边界)
     document.querySelectorAll('[data-span]').forEach(b => {
       b.addEventListener('click', () => {
         const v = +b.dataset.span;
-        if (v < _pickState.spanMin) _pickState.spanMin = v;
-        else if (v > _pickState.spanMax) _pickState.spanMax = v;
-        else if (v === _pickState.spanMin && _pickState.spanMin < _pickState.spanMax) _pickState.spanMin = v + 1;
-        else if (v === _pickState.spanMax && _pickState.spanMax > _pickState.spanMin) _pickState.spanMax = v - 1;
+        const clickedOn = b.classList.contains('on');
+        if (clickedOn) {
+          // 关闭 v:缩边界
+          if (_pickState.spanMin === _pickState.spanMax) return;  // 只剩 1 个不能关
+          if (v === _pickState.spanMin) _pickState.spanMin = v + 1;
+          else if (v === _pickState.spanMax) _pickState.spanMax = v - 1;
+        } else {
+          // 开启 v:扩边界
+          if (v < _pickState.spanMin) _pickState.spanMin = v;
+          else if (v > _pickState.spanMax) _pickState.spanMax = v;
+        }
+        // 防止翻转
         if (_pickState.spanMin > _pickState.spanMax) {
           const t = _pickState.spanMin; _pickState.spanMin = _pickState.spanMax; _pickState.spanMax = t;
         }
