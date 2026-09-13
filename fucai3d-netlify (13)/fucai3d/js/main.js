@@ -1034,6 +1034,44 @@ window.FucaiMain = (function () {
           </div>
         </div>
 
+        <!-- v5.8.17:组号器(每位输入候选号 + Kill,一键生成所有组合) -->
+        <div class="sub-section" style="background:rgba(110,240,158,.04);border:1px solid rgba(110,240,158,.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div class="opt-mini-label" style="font-weight:bold;color:#6ef09e;margin-bottom:8px;">🧩 组号器(每位输入候选号 + Kill,一键生成所有组合)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:11px;color:var(--text-2);margin-bottom:3px;">百位 (必填)</div>
+              <input id="zuhe-bai" type="text" placeholder="如:1,3" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(110,240,158,.3);border-radius:4px;color:#6ef09e;font-family:monospace;font-size:13px;" value="1,3">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-2);margin-bottom:3px;">十位 (必填)</div>
+              <input id="zuhe-shi" type="text" placeholder="如:2,4" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(110,240,158,.3);border-radius:4px;color:#6ef09e;font-family:monospace;font-size:13px;" value="2,4">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-2);margin-bottom:3px;">个位 (必填)</div>
+              <input id="zuhe-ge" type="text" placeholder="如:5,7" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(110,240,158,.3);border-radius:4px;color:#6ef09e;font-family:monospace;font-size:13px;" value="5,7">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px;color:#ff5060;margin-bottom:3px;">bKill (排除)</div>
+              <input id="zuhe-bkill" type="text" placeholder="如:0,9" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(255,80,96,.3);border-radius:4px;color:#ff5060;font-family:monospace;font-size:13px;" value="0,9">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#ff5060;margin-bottom:3px;">sKill (排除)</div>
+              <input id="zuhe-skill" type="text" placeholder="留空" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(255,80,96,.3);border-radius:4px;color:#ff5060;font-family:monospace;font-size:13px;">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#ff5060;margin-bottom:3px;">gKill (排除)</div>
+              <input id="zuhe-gkill" type="text" placeholder="留空" style="width:100%;padding:6px;background:rgba(0,0,0,.3);border:1px solid rgba(255,80,96,.3);border-radius:4px;color:#ff5060;font-family:monospace;font-size:13px;">
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="opt-btn small" id="zuhe-gen" style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:bold;padding:6px 14px;"># 组号</button>
+            <button class="opt-btn small" id="zuhe-copy" style="background:rgba(110,240,158,.15);color:#6ef09e;font-weight:bold;padding:6px 14px;border:1px solid #6ef09e;">📋 复制</button>
+          </div>
+          <div style="background:rgba(0,0,0,.2);border:1px solid rgba(110,240,158,.15);border-radius:4px;padding:8px;min-height:40px;font-family:monospace;font-size:12px;color:#6ef09e;" id="zuhe-out">点击 #组号 生成组合</div>
+        </div>
+
         <!-- 注数 + 生成 -->
         <div class="sub-section">
           <div class="opt-row">
