@@ -2729,7 +2729,8 @@ window.FucaiMain = (function () {
       after: 0,
       newItems: picks,
       source: 'weighted-v5.7.20',
-      strategies: ['加权+约束'],
+      strategies: ['随机'],
+      _killContain: JSON.parse(JSON.stringify(_pickState.killContain || [])),  // 快照 — chip 变了自动清
       latest: window.FucaiData && window.FucaiData.latest ? window.FucaiData.latest : null,
       next: window.FucaiData && window.FucaiData.next ? window.FucaiData.next : null
     };
