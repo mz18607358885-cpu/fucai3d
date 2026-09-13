@@ -997,15 +997,27 @@ window.FucaiMain = (function () {
                   return '<span style="color:#888;">点击 = 切换(再点恢复)</span>';
                 })()}
                 ${(() => {
+                  // v5.8.15:3 位合并,取 rate 最高的 top 5(自动推荐)
                   const kp = _killPool;
                   if (!kp) return '';
-                  const posHot = { bai: new Set(), shi: new Set(), ge: new Set() };
+                  const all = [];
                   ['bai', 'shi', 'ge'].forEach(pos => {
-                    (kp[pos] || []).forEach(x => { if (x.rate >= 92) posHot[pos].add(x.code); });
+                    (kp[pos] || []).forEach(x => { all.push({ code: x.code, rate: x.rate, pos }); });
                   });
-                  const total = posHot.bai.size + posHot.shi.size + posHot.ge.size;
-                  if (total === 0) return '';
-                  return '';  // v5.8.15 去除 一键杀定位 按钮(误杀太多)
+                  // 按 rate 降序去重,取前 5 个不重复号
+                  const seen = new Set();
+                  const top5 = [];
+                  all.sort((a, b) => b.rate - a.rate);
+                  for (const x of all) {
+                    if (seen.has(x.code)) continue;
+                    seen.add(x.code);
+                    top5.push(x);
+                    if (top5.length >= 5) break;
+                  }
+                  if (top5.length === 0) return '';
+                  const posLabel = { bai: '百', shi: '十', ge: '个' };
+                  return `<button class="opt-btn xs" data-kc-auto-add style="background:linear-gradient(135deg,#ff8d8d,#ff5060);color:#fff;font-weight:700;padding:3px 8px;margin-left:8px;" title="点击 = 自动加入 5 个 准确率最高的定位杀号(从 3 位合并)">⭐ 自动推荐 (top 5)</button>
+                    <span style="font-size:10px;color:#ff8d8d;margin-left:4px;">[${top5.map(x => `${x.code}·${x.rate.toFixed(1)}%[${posLabel[x.pos]}]`).join(' ')}]</span>`;
                 })()}
               </div>
               ${(() => {
