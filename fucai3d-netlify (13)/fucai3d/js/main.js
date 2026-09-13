@@ -43,20 +43,34 @@ window.FucaiMain = (function () {
   // 主题
   let _theme = localStorage.getItem('fucai3d_theme') || 'gold';
 
-  // v5.7:用户手动杀号(localStorage 持久化,跨刷新保留)
+  // v5.8.15:用户手动杀号(分位 bai/shi/ge 各自独立,localStorage 持久化)
   function getUserKills() {
     try {
       const v = localStorage.getItem('fucai3d_user_kills');
-      return v ? JSON.parse(v) : [];
-    } catch (e) { return []; }
+      const parsed = v ? JSON.parse(v) : null;
+      if (Array.isArray(parsed)) {
+        // 老数据 Array → 转分位(任一位含都杀,保守)
+        return { bai: parsed.slice(), shi: parsed.slice(), ge: parsed.slice() };
+      }
+      if (parsed && typeof parsed === 'object') {
+        return { bai: parsed.bai || [], shi: parsed.shi || [], ge: parsed.ge || [] };
+      }
+      return { bai: [], shi: [], ge: [] };
+    } catch (e) { return { bai: [], shi: [], ge: [] }; }
   }
-  function addUserKill(code) {
-    const arr = getUserKills();
-    if (!arr.includes(code)) { arr.push(code); localStorage.setItem('fucai3d_user_kills', JSON.stringify(arr)); }
+  function setUserKills(obj) {
+    localStorage.setItem('fucai3d_user_kills', JSON.stringify(obj));
   }
-  function removeUserKill(code) {
-    const arr = getUserKills().filter(x => x !== code);
-    localStorage.setItem('fucai3d_user_kills', JSON.stringify(arr));
+  function addUserKill(code, pos) {
+    const k = getUserKills();
+    const list = (k[pos] || (k[pos] = []));
+    if (!list.includes(code)) { list.push(code); setUserKills(k); }
+  }
+  function removeUserKill(code, pos) {
+    const k = getUserKills();
+    const list = k[pos] || [];
+    const idx = list.indexOf(code);
+    if (idx >= 0) { list.splice(idx, 1); setUserKills(k); }
   }
   function clearUserKills() { localStorage.setItem('fucai3d_user_kills', JSON.stringify([])); }
 
@@ -695,7 +709,9 @@ window.FucaiMain = (function () {
       .filter(k => k.name === '上期十位直接杀')
       .map(k => k.code);
     const realExclude = new Set([...axisNums, ...shiqiweiKill]);
-    const userKills = new Set(getUserKills());  // 用户手动杀号
+    // v5.8.15:分位独立 userKills
+    const userKillsRaw = getUserKills();
+    const userKills = { bai: new Set(userKillsRaw.bai || []), shi: new Set(userKillsRaw.shi || []), ge: new Set(userKillsRaw.ge || []) };
     const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀
     // v5.7.19:反对 ≠ 恢复成候选,反对 = 标记"我反对这个号被杀",但**选号时不选**
     //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀 - 杀组选
@@ -738,13 +754,13 @@ window.FucaiMain = (function () {
     const excludeInfo = `排除集:axis[${axisNums.join(',')}] + 上期十位[${shiqiweiKill.join(',')}]`;
 
     // v5.8.15:候选/被杀 chip 视觉强化(加图标 + 显眼配色)
-    const candSpan = (n) => `<span class="opt-code" data-uk-add="${n}" title="✓ 候选号 · 点击 → 加入我的杀号(会排除)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
-    const myKillSpan = (n) => `<span class="opt-code killed" data-uk-rm="${n}" title="🗑 我的杀号 · 点击 → 恢复候选" style="cursor:pointer;background:rgba(255,80,96,.2);border:2px solid #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🗑</span>${n}</span>`;
+    const candSpan = (n, pos) => `<span class="opt-code" data-uk-add="${n}" data-uk-add-pos="${pos||''}" title="✓ ${pos||'全'}位候选号 · 点击 → 加入该位杀号(只杀该位)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
+    const myKillSpan = (n, pos) => `<span class="opt-code killed" data-uk-rm="${n}" data-uk-rm-pos="${pos||''}" title="🗑 ${pos||'全'}位杀号 ${n} · 点击 → 恢复候选" style="cursor:pointer;background:rgba(255,80,96,.2);border:2px solid #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🗑</span>${n}</span>`;
     const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="🚫 系统杀 · 点击 → 我反对(恢复成候选)" style="cursor:pointer;background:rgba(255,80,96,.12);border:2px dashed #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;">🚫</span>${n}</span>`;
     // v5.8.15:已反对/已恢复 → 绿虚线 + 白字(操作反馈:已表态)
     const antiSpan = (n) => `<span class="opt-code anti-recovered" data-anti-rm="${n}" title="✅ 已反对系统杀 · 点击 → 取消反对" style="cursor:pointer;background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);"><span style="font-size:9px;color:#6ef09e;">✅</span>${n}</span>`;
     const restoredSpan = (n) => `<span class="opt-code anti-recovered" data-uk-rm="${n}" title="✅ 已恢复候选 · 点击 → 重新加入我的杀号" style="cursor:pointer;background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);"><span style="font-size:9px;color:#6ef09e;">✅</span>${n}</span>`;
-    const codeList = (arr) => arr.map(candSpan).join('') || '<span class="empty-tag">无</span>';
+    const codeList = (arr, pos) => arr.map(n => candSpan(n, pos)).join('') || '<span class="empty-tag">无</span>';
     const killList = (set, useMineSpan) => Array.from(set).sort().map(n => useMineSpan(n)).join('');
     const isLow = restBai.length <= 3 || restShi.length <= 3 || restGe.length <= 3;
 
@@ -1067,7 +1083,7 @@ window.FucaiMain = (function () {
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-shrink:0;">
-              ${userKills.size > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${userKills.size}</button>` : ''}
+              ${(userKills.bai.size + userKills.shi.size + userKills.ge.size) > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${userKills.bai.size + userKills.shi.size + userKills.ge.size}</button>` : ''}
               ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除反对 ${userAntiKills.size}</button>` : ''}
             </div>
           </div>
@@ -1075,13 +1091,13 @@ window.FucaiMain = (function () {
             <div class="cand-label">
               百位 <span style="color:var(--dan);">${restBai.length}</span> 候选
               <span style="color:var(--text-3);"> / ${10 - restBai.length} 被杀</span>
-              ${userKills.size > 0 ? `<span style="color:#ff5060;font-size:11px;"> (含我杀 ${userKills.size})</span>` : ''}
+              ${(userKills.bai.size + userKills.shi.size + userKills.ge.size) > 0 ? `<span style="color:#ff5060;font-size:11px;"> (含我杀 百${userKills.bai.size} 十${userKills.shi.size} 个${userKills.ge.size})</span>` : ''}
             </div>
             <div class="cand-list">
-              ${codeList(restBai)}
+              ${codeList(restBai, 'bai')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
+              ${userKills.bai.size > 0 ? Array.from(userKills.bai).sort().map(n => myKillSpan(n, 'bai')).join('') : ''}
             </div>
           </div>
           <div class="cand-col">
@@ -1090,10 +1106,10 @@ window.FucaiMain = (function () {
               <span style="color:var(--text-3);"> / ${10 - restShi.length} 被杀</span>
             </div>
             <div class="cand-list">
-              ${codeList(restShi)}
+              ${codeList(restShi, 'shi')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
+              ${userKills.shi.size > 0 ? Array.from(userKills.shi).sort().map(n => myKillSpan(n, 'shi')).join('') : ''}
             </div>
           </div>
           <div class="cand-col">
@@ -1102,10 +1118,10 @@ window.FucaiMain = (function () {
               <span style="color:var(--text-3);"> / ${10 - restGe.length} 被杀</span>
             </div>
             <div class="cand-list">
-              ${codeList(restGe)}
+              ${codeList(restGe, 'ge')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKills.size > 0 ? Array.from(userKills).sort().map(myKillSpan).join('') : ''}
+              ${userKills.ge.size > 0 ? Array.from(userKills.ge).sort().map(n => myKillSpan(n, 'ge')).join('') : ''}
             </div>
           </div>
         </div>
@@ -2238,26 +2254,27 @@ window.FucaiMain = (function () {
     const regen = $('regenBtn');
     if (regen) regen.addEventListener('click', doGenerate);
 
-    // v5.7:候选号点击 → 加入我的杀号
+    // v5.8.15:候选号点击 → 分位独立杀(百/十/个 独立)
     document.querySelectorAll('[data-uk-add]').forEach(b => {
       b.addEventListener('click', () => {
         const code = +b.dataset.ukAdd;
-        addUserKill(code);
-        toast(`🚫 ${code} 已加入"我的杀号"(点击恢复)`);
+        const pos = b.dataset.ukAddPos || 'bai';  // v5.8.15:分位
+        addUserKill(code, pos);
+        toast(`🚫 ${pos}位 ${code} 已加入"我的杀号"`);
         switchTab('pick');
       });
     });
-    // v5.8.15:我的杀号点击 → 1.5 秒动画反馈(绿虚+白字"已恢复"),然后变绿实候选
+    // v5.8.15:我的杀号点击 → 恢复(分位独立)
     document.querySelectorAll('[data-uk-rm]').forEach(b => {
       b.addEventListener('click', () => {
         const code = +b.dataset.ukRm;
-        // 立刻显示 ✅ 绿虚+白 反馈(1.5 秒)
+        const pos = b.dataset.ukRmPos || 'bai';
         b.style.cssText = 'background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);';
         b.innerHTML = `<span style="font-size:9px;color:#6ef09e;">✅</span>${code}`;
-        b.title = '✅ 已恢复 · 1.5 秒后变成绿实候选';
+        b.title = '✅ 已恢复 · 0.8 秒后变成绿实候选';
         setTimeout(() => {
-          removeUserKill(code);
-          toast(`✅ ${code} 已恢复为候选`);
+          removeUserKill(code, pos);
+          toast(`✅ ${pos}位 ${code} 已恢复为候选`);
           switchTab('pick');
         }, 800);
       });
