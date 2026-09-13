@@ -2453,7 +2453,9 @@ window.FucaiMain = (function () {
       (kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code)
     );
     const realExclude = new Set([...axisNums, ...shiqiweiKill]);
-    const userKills = new Set(getUserKills());
+    const userKillsRawG = getUserKills();
+    const userKillsPos = { bai: new Set(userKillsRawG.bai || []), shi: new Set(userKillsRawG.shi || []), ge: new Set(userKillsRawG.ge || []) };
+    const userKills = new Set([...userKillsPos.bai, ...userKillsPos.shi, ...userKillsPos.ge]);
     const userAntiKills = new Set(getUserAntiKills());
     const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
     // v5.8.15:分位杀(百/十/个 各减,但 doGenerate 也按"任一位被杀的号都排除"算 allExclude)
@@ -2473,9 +2475,10 @@ window.FucaiMain = (function () {
     if (Array.isArray(_pickState.killContain)) {
       _pickState.killContain.forEach(n => { baiKilled.add(n); shiKilled.add(n); geKilled.add(n); });
     }
+    // 用户手动杀(分位独立)
     const baseAll = new Set([...realExclude, ...userKills]);
-    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !baiKilled.has(n));
-    const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !shiKilled.has(n));
+    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !userKillsPos.bai.has(n));
+    const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !userKillsPos.shi.has(n));
     const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !geKilled.has(n));
 
     // v5.8+:杀组选影响:含此数 → 选号必含 → 候选 0 个 = 选不到
@@ -3265,3 +3268,4 @@ window.FucaiMain = (function () {
 
   return { render, boot };
 })();
+// v5.8.15: userKills 改分位独立
