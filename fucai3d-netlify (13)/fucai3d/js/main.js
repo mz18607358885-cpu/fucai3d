@@ -2477,9 +2477,9 @@ window.FucaiMain = (function () {
       return (a === b || b === c || a === c) ? '组三' : '组六';
     }
 
-    const n = _pickState.count;
+    let n = _pickState.count;  // v5.8.17:let 允许降级时重新赋值
     const totalCombos = restBai.length * restShi.length * restGe.length;
-    const actualN = Math.min(n, totalCombos);
+    let actualN = Math.min(n, totalCombos);  // v5.8.17:let(降级时可重算)
 
     const picks = [];
     const seen = new Set();
