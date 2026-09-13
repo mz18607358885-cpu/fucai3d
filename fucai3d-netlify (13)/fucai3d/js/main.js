@@ -2482,10 +2482,7 @@ window.FucaiMain = (function () {
     const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !userKillsPos.shi.has(n));
     const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !geKilled.has(n));
 
-    // v5.8+:杀组选影响:含此数 → 选号必含 → 候选 0 个 = 选不到
-    if (killContainSet.size > 0) {
-      console.log(`[杀组选] 用户排除含数: ${[...killContainSet].sort().join(',')}(共 ${killContainSet.size} 个)`);
-    }
+    // (v5.8.17 调试 log 已删)
 
     if (!restBai.length || !restShi.length || !restGe.length) {
       toast('⚠️ 候选为空,无法生成');
