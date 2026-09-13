@@ -1046,8 +1046,8 @@ window.FucaiMain = (function () {
                     <span style="font-size:11px;color:${isPos ? '#ff8d8d' : '#a78bfa'};font-weight:600;">${isPos ? '🎯 定位杀推荐(220 期回测 · 92%+ · 基于 ' : '🧠 系统推荐(200 期回测 · 基于 '}${curPeriod} 期)</span>
                     <button class="opt-btn xs" data-refresh-suggest style="font-size:10px;padding:2px 8px;">🔄 刷新</button>
                   </div>
-                  ${suggests.map(s => `<button class="opt-btn xs" data-kc-add="${s.num}" style="margin:2px;font-family:monospace;${s.source === 'pos' ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.15);' : ''}">
-                    🚫 杀 <strong style="color:#ff5060;">${s.num}</strong> · <span style="color:${s.source === 'pos' ? '#ff8d8d' : '#a78bfa'};">${s.rate.toFixed(2)}%</span>${s.source === 'pos' ? ' ⭐' : ''}
+                  ${suggests.map(s => `<button class="opt-btn xs" data-kc-add="${s.num}" style="margin:2px;font-family:monospace;${s.source === 'pos' ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.15);' : ''}" title="${s.name} · ${s.rate.toFixed(2)}%${s.source === 'pos' ? ' ⭐ 定位杀 92%+' : ''} · 点击加入杀组选">
+                    🚫 杀 <strong style="color:#ff5060;">${s.num}</strong>${s.source === 'pos' ? `<span style="color:#ff8d8d;font-size:10px;"> [${s.name.replace('定位杀·','')}]</span>` : ''} · <span style="color:${s.source === 'pos' ? '#ff8d8d' : '#a78bfa'};">${s.rate.toFixed(2)}%</span>${s.source === 'pos' ? ' ⭐' : ''}
                   </button>`).join('')}
                   <div style="font-size:10px;color:var(--text-3);margin-top:4px;">${isPos ? '⭐ 定位杀 92%+ (强推荐) · 杀对率 92-95%' : '点推荐 = 自动加入杀组选(可叠加) · 下期开奖后自动重算'}</div>
                 </div>`;
