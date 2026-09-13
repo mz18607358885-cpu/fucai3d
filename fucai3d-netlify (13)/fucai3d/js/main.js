@@ -1084,8 +1084,18 @@ window.FucaiMain = (function () {
           </div>
         </div>
 
-        <!-- 候选预览(已去除 — v5.8.15 改:用户说只看杀组选剩余号码) -->
+        <!-- 候选预览(已去除) -->
         <div class="candidate-box" style="display:none;"></div>
+        ${(() => {
+          // v5.8.17:如 果 _pickState.last 含 已杀号,清空(stale)
+          if (_pickState.last && _pickState.last.picks && _pickState.last.picks.length) {
+            const kcArr = Array.isArray(_pickState.killContain) ? _pickState.killContain : [];
+            const kcSet = new Set(kcArr);
+            const stale = _pickState.last.picks.some(p => kcSet.has(p.a) || kcSet.has(p.b) || kcSet.has(p.c));
+            if (stale) _pickState.last = null;
+          }
+          return '';
+        })()}
 
         ${(() => {
           // v5.8.15:杀组选 已杀号码(独立显示,紫色区分,任一位含都排除)
