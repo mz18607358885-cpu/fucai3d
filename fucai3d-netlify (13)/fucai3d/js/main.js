@@ -2116,14 +2116,19 @@ window.FucaiMain = (function () {
         const axisNums = new Set((kp.axis && kp.axis.axisNumbers) || []);
         const shiqiweiKill = new Set((kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code));
         const realExclude = new Set([...axisNums, ...shiqiweiKill]);
-        const userKills = new Set(getUserKills());
+        const userKillsRawBtn = getUserKills();
+        const userKillsFlat = new Set([
+          ...(Array.isArray(userKillsRawBtn) ? userKillsRawBtn : (userKillsRawBtn.bai || [])),
+          ...(Array.isArray(userKillsRawBtn) ? [] : (userKillsRawBtn.shi || [])),
+          ...(Array.isArray(userKillsRawBtn) ? [] : (userKillsRawBtn.ge  || []))
+        ]);
         const kcBtn = _pickState.killContain || {};
         const killContainSet = new Set([
           ...(Array.isArray(kcBtn) ? kcBtn : (kcBtn.bai || [])),
           ...(Array.isArray(kcBtn) ? [] : (kcBtn.shi || [])),
           ...(Array.isArray(kcBtn) ? [] : (kcBtn.ge  || []))
         ]);
-        const allExclude = new Set([...realExclude, ...userKills, ...killContainSet]);
+        const allExclude = new Set([...realExclude, ...userKillsFlat, ...killContainSet]);
         const candLen = [0,1,2,3,4,5,6,7,8,9].filter(n => !allExclude.has(n)).length;
         // 算 maxUnique
         let maxUnique = 0;
