@@ -11,28 +11,16 @@ window.FucaiFetcher = (function () {
   const PROXY_HOSTS = [
     { name: 'allorigins', wrap: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` }
   ];
-  // 全部 proxy × 全部 target 组合(优先 500.com 走最稳的 proxy)
+  // v5.8.17:PROXY_ORDER 只用 allorigins(其他 proxy 都已删)
   const PROXY_ORDER = [
     // 1) 500.com + allorigins  (已验证 ✅)
     ['500', 'allorigins'],
-    // 2) cwl + allorigins      (已验证 ✅)
+    // 2) cwl + allorigins
     ['cwl', 'allorigins'],
-    // 3) 500.com + corsproxy   (备用)
-    ['500', 'corsproxy'],
-    // 4) cwl + corsproxy
-    ['cwl', 'corsproxy'],
-    // 5) 500.com + codetabs
-    ['500', 'codetabs'],
-    // 6) cwl + thingproxy
-    ['cwl', 'thingproxy'],
-    // 7) 500.com + cors.sh
-    ['500', 'cors.sh'],
-    // 8) cwl mobile
-    ['cwl-mobile', 'allorigins'],
-    // 9) 500w
+    // 3) 500w + allorigins
     ['500w', 'allorigins'],
-    // 10) cwl + cors.sh
-    ['cwl', 'cors.sh']
+    // 4) cwl-mobile + allorigins
+    ['cwl-mobile', 'allorigins']
   ];
 
   // 单次 fetch 尝试(带超时)
