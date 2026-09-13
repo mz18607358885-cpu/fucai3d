@@ -482,7 +482,30 @@ window.FucaiFormula = (function () {
     // v5.8.13 正向预测形态
     const typePredict = predictType(ctx, history);
 
-    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis, zuxuanKill, typePredict };
+    // v5.8.16:形态概率预测(近 20 期)
+    const typeStat = predictTypeStat(history);
+    return { ctx, kills, high, pos, posCon, dan, sumSpan, zuxuan, adv, axis, zuxuanKill, typePredict, typeStat };
+  }
+
+
+  // v5.8.16:形态概率统计(近 20 期)
+  function predictTypeStat(history) {
+    const N = 20;
+    if (!history || history.length === 0) return { zu6: 0, zu3: 0, baozi: 0 };
+    const recent = history.slice(0, N);
+    let zu6 = 0, zu3 = 0, baozi = 0;
+    recent.forEach(h => {
+      if (h.a === h.b && h.b === h.c) baozi++;
+      else if (h.a === h.b || h.b === h.c || h.a === h.c) zu3++;
+      else zu6++;
+    });
+    const total = recent.length;
+    return {
+      zu6: +(zu6 / total * 100).toFixed(1),
+      zu3: +(zu3 / total * 100).toFixed(1),
+      baozi: +(baozi / total * 100).toFixed(1),
+      n: total
+    };
   }
 
   // ════════════════════════════════════════════════
