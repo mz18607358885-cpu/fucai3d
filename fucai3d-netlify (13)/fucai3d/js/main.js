@@ -1027,9 +1027,9 @@ window.FucaiMain = (function () {
                 const overlap = [...kcSet].filter(n => axisSet.has(n));
                 const totalUnique = new Set([...kcSet, ...axisSet]).size;
                 if (kcSet.size === 0 && axisSet.size === 0) return '';
-                const baiK = 10 - kcPos.bai.length;
-                const shiK = 10 - kcPos.shi.length;
-                const geK  = 10 - kcPos.ge.length;
+                const baiK = (kcPos.bai || []).length;  // 杀了几 个(不是 10-)
+                const shiK = (kcPos.shi || []).length;
+                const geK  = (kcPos.ge  || []).length;
                 return `<div style="margin-top:8px;padding:6px 10px;background:rgba(110,240,158,.06);border:1px solid rgba(110,240,158,.2);border-radius:6px;font-size:11px;color:var(--text-2);">
                   📊 <b>分位杀</b>:百位 ${baiK} + 十位 ${shiK} + 个位 ${geK} = <b style="color:#6ef09e;">${kcSet.size}</b> 个不重复号(任一位含都杀)
                   ${axisSet.size > 0 ? `<br>➕ 十位轴 <b style="color:#f3c969;">${axisSet.size}</b> 个 = <b style="color:#6ef09e;">${totalUnique}</b> 个不重复` : ''}
