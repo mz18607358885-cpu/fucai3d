@@ -2452,10 +2452,8 @@ window.FucaiMain = (function () {
     }
     const kp = _killPool;
     const axisNums = new Set((kp.axis && kp.axis.axisNumbers) || []);
-    const shiqiweiKill = new Set(
-      (kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code)
-    );
-    const realExclude = new Set([...axisNums, ...shiqiweiKill]);
+    // v5.8.17:取消系统自动杀号(只留用户手动杀:杀组选 + 我的杀)
+    const realExclude = new Set();
     const userKillsRawG = getUserKills();
     const userKillsPos = { bai: new Set(userKillsRawG.bai || []), shi: new Set(userKillsRawG.shi || []), ge: new Set(userKillsRawG.ge || []) };
     const userKills = new Set([...userKillsPos.bai, ...userKillsPos.shi, ...userKillsPos.ge]);
