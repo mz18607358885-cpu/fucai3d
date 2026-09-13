@@ -7,15 +7,9 @@ window.FucaiFetcher = (function () {
     '500w': 'https://m.500.com/kaijiang/sd',  // 备用路径
     'cwl-mobile': 'https://m.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=3d&pageNo=1&pageSize=10'
   };
-  // CORS proxy 列表(7 个,按稳定性)
+  // v5.8.17:CORS proxy 列表(只留 allorigins — 唯一稳定的免费 proxy)
   const PROXY_HOSTS = [
-    { name: 'allorigins', wrap: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
-    { name: 'corsproxy',  wrap: u => `https://corsproxy.com/?${encodeURIComponent(u)}` },
-    { name: 'codetabs',   wrap: u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}` },
-    { name: 'thingproxy', wrap: u => `https://thingproxy.freeboard.io/fetch/${u}` },
-    { name: 'cors-anywhere', wrap: u => `https://cors-anywhere.herokuapp.com/${u}` },
-    { name: 'cors.sh',    wrap: u => `https://cors.sh/${u}` },
-    { name: 'direct',     wrap: u => u }  // 直接抓(可能 CORS 失败,但偶尔能通)
+    { name: 'allorigins', wrap: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` }
   ];
   // 全部 proxy × 全部 target 组合(优先 500.com 走最稳的 proxy)
   const PROXY_ORDER = [
