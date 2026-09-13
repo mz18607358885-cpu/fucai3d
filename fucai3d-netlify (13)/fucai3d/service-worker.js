@@ -1,7 +1,7 @@
 // service-worker.js — PWA 离线缓存
 // v5.8.12 优化:关键 JS 也走 stale-while-revalidate(秒开,后台更新)
 // 缓存策略:cache-first(命中返回缓存,miss 走网络)
-const CACHE = 'fc3d-v6';  // v5.8.12:改名强制刷新缓存(stale-while-revalidate 模式)
+const CACHE = 'fc3d-v7';  // v5.8.12:改名强制刷新缓存(stale-while-revalidate 模式)
 const ASSETS = [
   '/',
   '/index.html',
