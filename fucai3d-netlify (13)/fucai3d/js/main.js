@@ -968,6 +968,14 @@ window.FucaiMain = (function () {
                 ${spanBtns.join('')}
               </div>
             </div>
+            ${(() => {
+              // v5.8.16:形态概率预测(近 20 期)
+              const ts = _result && _result.typeStat;
+              if (!ts || !ts.n) return '';
+              return `<div style="margin-top:8px;padding:6px 10px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;font-size:11px;">
+                📈 <b>形态概率预测</b>(近 ${ts.n} 期): <span style="color:#6ef09e;font-weight:bold;">组六 ${ts.zu6}%</span> · <span style="color:#f3c969;font-weight:bold;">组三 ${ts.zu3}%</span> · <span style="color:#a78bfa;font-weight:bold;">豹子 ${ts.baozi}%</span>
+              </div>`;
+            })()}
             <div style="border-top:1px dashed rgba(255,255,255,.1);padding-top:12px;">
               <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                 <span>🚫 杀组选(0-9,多选)</span>
