@@ -52,6 +52,19 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/.netlify/functions/')) return;
   // 不缓存 latest.json(总是拿最新)
   if (event.request.url.includes('/latest.json')) return;
+  // v5.8.17:.js 文件用 network-first 强制拉新(避免 SW cache 旧版)
+  if (/\.js(\?|$)/.test(event.request.url)) {
+    event.respondWith(
+      fetch(event.request).then((r) => {
+        if (r && r.status === 200) {
+          const clone = r.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+        }
+        return r;
+      }).catch(() => caches.match(event.request).then(c => c || new Response('', { status: 504 })))
+    );
+    return;
+  }
 
   // v5.8.12 优化:stale-while-revalidate 模式
   // - 命中 cache:立即返回 cache(秒开),后台 fetch 更新
