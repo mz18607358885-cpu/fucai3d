@@ -711,7 +711,8 @@ window.FucaiMain = (function () {
     const realExclude = new Set([...axisNums, ...shiqiweiKill]);
     // v5.8.15:分位独立 userKills
     const userKillsRaw = getUserKills();
-    const userKills = { bai: new Set(userKillsRaw.bai || []), shi: new Set(userKillsRaw.shi || []), ge: new Set(userKillsRaw.ge || []) };
+    const userKillsPos = { bai: new Set(userKillsRaw.bai || []), shi: new Set(userKillsRaw.shi || []), ge: new Set(userKillsRaw.ge || []) };
+    const userKills = new Set([...userKillsPos.bai, ...userKillsPos.shi, ...userKillsPos.ge]);
     const userAntiKills = new Set(getUserAntiKills());  // v5.7.14:用户反对系统杀
     // v5.7.19:反对 ≠ 恢复成候选,反对 = 标记"我反对这个号被杀",但**选号时不选**
     //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀 - 杀组选
