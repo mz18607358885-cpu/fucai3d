@@ -37,8 +37,8 @@ window.FucaiFetcher = (function () {
     ['cwl-mobile', 'allorigins'],
     // 9) 500w
     ['500w', 'allorigins'],
-    // 10) direct (兜底)
-    ['500', 'direct']
+    // 10) cwl + cors.sh
+    ['cwl', 'cors.sh']
   ];
 
   // 单次 fetch 尝试(带超时)
