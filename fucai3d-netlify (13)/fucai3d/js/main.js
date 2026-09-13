@@ -748,8 +748,8 @@ window.FucaiMain = (function () {
       ...(kp.killKuaDu || [])
     ]);
 
-    // 提示标签
-    const excludeInfo = `排除集:axis[${axisNums.join(',')}] + 上期十位[${shiqiweiKill.join(',')}]`;
+    // 提示标签(v5.8.16:取消系统自动杀,只留用户手动杀)
+    const excludeInfo = `排除集:用户手动杀(${userKillsPos.bai.size + userKillsPos.shi.size + userKillsPos.ge.size} 位) + 杀组选(${killContainSetUI.size} 个号)`;
 
     // v5.8.15:候选/被杀 chip 视觉强化(加图标 + 显眼配色)
     const candSpan = (n, pos) => `<span class="opt-code" data-uk-add="${n}" data-uk-add-pos="${pos||''}" title="✓ ${pos||'全'}位候选号 · 点击 → 加入该位杀号(只杀该位)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
