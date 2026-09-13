@@ -77,7 +77,7 @@ window.FucaiAutoUpdater = (function () {
         broadcast('success', { newCount, latest: result.latest });
         listeners.forEach(fn => {
           try { fn({ type: 'newData', newCount, latest: result.latest, next: result.next, source: result.source, result }); }
-          catch (e) { console.error('[autoUpdater] 监听器错误', e); }
+          catch (e) { console.error('[autoUpdater] 监听器错误', e); console.error('STACK:', e.stack); }
         });
         return result;
       } else {
@@ -163,12 +163,12 @@ window.FucaiAutoUpdater = (function () {
       }
     }
 
-    // 页面打开 2 秒后立即抓一次
+    // 页面打开立即抓一次(0 秒延迟,v5.7.7.3 — 进去就是最新)
     setTimeout(() => {
       tick('page-load').then(() => {
         schedule();
       });
-    }, 2000);
+    }, 0);
 
     // 标签页切回前台立即抓(用户可能离开后数据已出)
     let lastVisibilityTrigger = 0;
