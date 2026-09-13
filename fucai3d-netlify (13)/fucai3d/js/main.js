@@ -2499,8 +2499,8 @@ window.FucaiMain = (function () {
     if (Array.isArray(_pickState.killContain)) {
       _pickState.killContain.forEach(n => { baiKilled.add(n); shiKilled.add(n); geKilled.add(n); });
     }
-    // 用户手动杀(分位独立)
-    const baseAll = new Set([...realExclude, ...userKills]);
+    // 用户手动杀(分位独立) + 杀组选(任一位含都排除) — v5.8.15 修:必须过滤 killContainSet
+    const baseAll = new Set([...realExclude, ...userKills, ...killContainSet]);
     const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !userKillsPos.bai.has(n));
     const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !userKillsPos.shi.has(n));
     const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !geKilled.has(n));
