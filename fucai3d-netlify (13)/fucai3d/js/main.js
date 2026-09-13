@@ -1073,46 +1073,8 @@ window.FucaiMain = (function () {
           </div>
         </div>
 
-        <!-- 候选预览 -->
-        <div class="candidate-box">
-          <div class="cand-col">
-            <div class="cand-label">
-              百位 <span style="color:var(--dan);">${restBai.length}</span> 候选
-              <span style="color:var(--text-3);"> / ${10 - restBai.length} 被杀</span>
-              ${((userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size) > 0 ? `<span style="color:#ff5060;font-size:11px;"> (含我杀 百${(userKillsPos?.bai || new Set()).size} 十${(userKillsPos?.shi || new Set()).size} 个${(userKillsPos?.ge || new Set()).size})</span>` : ''}
-            </div>
-            <div class="cand-list">
-              ${codeList(restBai, 'bai')}
-              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
-              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${(userKillsPos?.bai || new Set()).size > 0 ? Array.from(userKillsPos?.bai || []).sort().map(n => myKillSpan(n, 'bai')).join('') : ''}
-            </div>
-          </div>
-          <div class="cand-col">
-            <div class="cand-label">
-              十位 <span style="color:var(--dan);">${restShi.length}</span> 候选
-              <span style="color:var(--text-3);"> / ${10 - restShi.length} 被杀</span>
-            </div>
-            <div class="cand-list">
-              ${codeList(restShi, 'shi')}
-              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
-              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${(userKillsPos?.shi || new Set()).size > 0 ? Array.from(userKillsPos?.shi || []).sort().map(n => myKillSpan(n, 'shi')).join('') : ''}
-            </div>
-          </div>
-          <div class="cand-col">
-            <div class="cand-label">
-              个位 <span style="color:var(--dan);">${restGe.length}</span> 候选
-              <span style="color:var(--text-3);"> / ${10 - restGe.length} 被杀</span>
-            </div>
-            <div class="cand-list">
-              ${codeList(restGe, 'ge')}
-              ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
-              ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${(userKillsPos?.ge || new Set()).size > 0 ? Array.from(userKillsPos?.ge || []).sort().map(n => myKillSpan(n, 'ge')).join('') : ''}
-            </div>
-          </div>
-        </div>
+        <!-- 候选预览(已去除 — v5.8.15 改:用户说只看杀组选剩余号码) -->
+        <div class="candidate-box" style="display:none;"></div>
 
         ${(() => {
           // v5.8.15:杀组选 已杀号码(独立显示,紫色区分,任一位含都排除)
