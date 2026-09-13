@@ -45,18 +45,13 @@ window.FucaiMain = (function () {
 
   // v5.8.15:用户手动杀号(分位 bai/shi/ge 各自独立,localStorage 持久化)
   function getUserKills() {
-    try {
-      const v = localStorage.getItem('fucai3d_user_kills');
-      const parsed = v ? JSON.parse(v) : null;
-      if (Array.isArray(parsed)) {
-        // 老数据 Array → 转分位(任一位含都杀,保守)
-        return { bai: parsed.slice(), shi: parsed.slice(), ge: parsed.slice() };
-      }
-      if (parsed && typeof parsed === 'object') {
-        return { bai: parsed.bai || [], shi: parsed.shi || [], ge: parsed.ge || [] };
-      }
-      return { bai: [], shi: [], ge: [] };
-    } catch (e) { return { bai: [], shi: [], ge: [] }; }
+    // v5.8.17:旧版"我的杀"(分位杀号)已删 UI,清掉残留数据避免干扰
+    //   只要清过一次就永久生效(用 localStorage 标记)
+    if (!localStorage.getItem('fucai3d_user_kills_cleared_v17')) {
+      localStorage.setItem('fucai3d_user_kills_cleared_v17', '1');
+      try { localStorage.removeItem('fucai3d_user_kills'); } catch (e) {}
+    }
+    return { bai: [], shi: [], ge: [] };
   }
   function setUserKills(obj) {
     localStorage.setItem('fucai3d_user_kills', JSON.stringify(obj));
