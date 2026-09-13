@@ -82,16 +82,16 @@
     });  // DOMContentLoaded 结束
   </script>
   <script>
-    // v5.8.16:强制清掉所有旧 SW + cache(PWA 强刷)→ 立即 reload 拉新
-    if ('serviceWorker' in navigator) {
-      let hasOldSW = false;
+    // v5.8.17:清旧 SW + cache,但只清一次(用 localStorage 标记防无限 reload)
+    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v7')) {
+      localStorage.setItem('sw_cleaned_v7', '1');
       navigator.serviceWorker.getRegistrations().then(function(rs) {
-        rs.forEach(function(r) { r.unregister(); hasOldSW = true; });
+        rs.forEach(function(r) { r.unregister(); });
       });
       if (window.caches) {
         caches.keys().then(function(ks) {
           ks.forEach(function(k) { caches.delete(k); });
-          if (hasOldSW) setTimeout(function() { location.reload(); }, 500);
+          setTimeout(function() { location.reload(); }, 500);
         });
       }
     }
