@@ -2193,6 +2193,47 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.8.17:组号器 — 一键生成组合
+    function parseList(str) {
+      return (str || '').split(/[,，\s]+/).map(x => x.trim()).filter(x => /^\d+$/.test(x) && +x >= 0 && +x <= 9).map(Number);
+    }
+    function generateZuhe() {
+      const bai = parseList(document.getElementById('zuhe-bai').value);
+      const shi = parseList(document.getElementById('zuhe-shi').value);
+      const ge  = parseList(document.getElementById('zuhe-ge').value);
+      const bk = parseList(document.getElementById('zuhe-bkill').value);
+      const sk = parseList(document.getElementById('zuhe-skill').value);
+      const gk = parseList(document.getElementById('zuhe-gkill').value);
+      if (!bai.length || !shi.length || !ge.length) {
+        toast('⚠️ 三位候选号都必填');
+        return;
+      }
+      const bSet = new Set(bai.filter(x => !bk.includes(x)));
+      const sSet = new Set(shi.filter(x => !sk.includes(x)));
+      const gSet = new Set(ge.filter(x => !gk.includes(x)));
+      const out = document.getElementById('zuhe-out');
+      if (!bSet.size || !sSet.size || !gSet.size) {
+        out.textContent = '❌ 排除后某位没号了';
+        out.style.color = '#ff5060';
+        return;
+      }
+      const list = [];
+      for (const b of bSet) for (const s of sSet) for (const g of gSet) list.push(`${b}${s}${g}`);
+      out.textContent = `输出 ${list.length} 注: ${list.join(' ')}`;
+      out.style.color = '#6ef09e';
+      window.__zuheList = list;
+    }
+    document.getElementById('zuhe-gen')?.addEventListener('click', generateZuhe);
+    document.getElementById('zuhe-copy')?.addEventListener('click', () => {
+      if (!window.__zuheList || !window.__zuheList.length) { toast('⚠️ 请先生成'); return; }
+      const text = window.__zuheList.join(' ');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => toast(`✅ 已复制 ${window.__zuheList.length} 注`));
+      } else {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        toast(`✅ 已复制 ${window.__zuheList.length} 注`);
+      }
+    });
 // v5.8+ 手动刷新推荐(重新算 suggestKillContain)
     document.querySelectorAll('[data-refresh-suggest]').forEach(b => {
       b.addEventListener('click', () => {
