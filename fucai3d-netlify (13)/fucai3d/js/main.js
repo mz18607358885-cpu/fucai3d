@@ -1017,7 +1017,9 @@ window.FucaiMain = (function () {
                   if (top5.length === 0) return '';
                   const posLabel = { bai: '百', shi: '十', ge: '个' };
                   return `<button class="opt-btn xs" data-kc-auto-add style="background:linear-gradient(135deg,#ff8d8d,#ff5060);color:#fff;font-weight:700;padding:3px 8px;margin-left:8px;" title="点击 = 自动加入 5 个 准确率最高的定位杀号(从 3 位合并)">⭐ 自动推荐 (top 5)</button>
-                    <span style="font-size:10px;color:#ff8d8d;margin-left:4px;">[${top5.map(x => `${x.code}·${x.rate.toFixed(1)}%[${posLabel[x.pos]}]`).join(' ')}]</span>`;
+                    <span style="display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle;">
+                      ${top5.map(x => `<span style="display:inline-block;background:rgba(255,80,96,.12);border:1px solid rgba(255,80,96,.4);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
+                    </span>`;
                 })()}
               </div>
               ${(() => {
