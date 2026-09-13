@@ -2222,6 +2222,7 @@ window.FucaiMain = (function () {
         } else {
           _pickState.killContain.push(n);  // 加入
         }
+        _pickState.last = null;  // v5.8.15:杀号变了,旧结果作废
         switchTab('pick');
       });
     });
@@ -2233,6 +2234,7 @@ window.FucaiMain = (function () {
         if (!_pickState.killContain.includes(n)) {
           _pickState.killContain.push(n);
         }
+        _pickState.last = null;
         switchTab('pick');
       });
     });
@@ -2257,6 +2259,7 @@ window.FucaiMain = (function () {
         } else {
           toast('已全部加入(或 0 个 92%+ 数字)');
         }
+        _pickState.last = null;
         switchTab('pick');
       });
     });
