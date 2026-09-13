@@ -92,10 +92,21 @@
     });
   </script>
   <script>
-    // v5.7.9:注册 Service Worker(PWA 离线缓存)
+    // v5.8.16:强制清掉所有旧 SW + cache(PWA 强刷)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(rs) {
+        rs.forEach(function(r) { r.unregister(); });
+      });
+      if (window.caches) {
+        caches.keys().then(function(ks) {
+          ks.forEach(function(k) { caches.delete(k); });
+        });
+      }
+    }
+    // v5.7.9:注册新 Service Worker(PWA 离线缓存)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js').then(function(reg) {
+        navigator.serviceWorker.register('/service-worker.js?v=5.8.17').then(function(reg) {
           console.log('[PWA] Service Worker 注册成功,scope:', reg.scope);
         }).catch(function(err) {
           console.warn('[PWA] Service Worker 注册失败:', err);
