@@ -2175,7 +2175,7 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-kc]').forEach(b => {
       b.addEventListener('click', () => {
         const n = +b.dataset.kc;
-        if (!_pickState.killContain) _pickState.killContain = [];
+        if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
         const idx = _pickState.killContain.indexOf(n);
         if (idx >= 0) {
           _pickState.killContain.splice(idx, 1);  // 取消
@@ -2189,7 +2189,7 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-kc-add]').forEach(b => {
       b.addEventListener('click', () => {
         const n = +b.dataset.kcAdd;
-        if (!_pickState.killContain) _pickState.killContain = [];
+        if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
         if (!_pickState.killContain.includes(n)) {
           _pickState.killContain.push(n);
         }
@@ -2200,7 +2200,7 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-kc-add-pos]').forEach(b => {
       b.addEventListener('click', () => {
         if (!_killPool) return;
-        if (!_pickState.killContain) _pickState.killContain = [];
+        if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
         const posHot = new Set();
         ['bai', 'shi', 'ge'].forEach(pos => {
           (_killPool[pos] || []).forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
