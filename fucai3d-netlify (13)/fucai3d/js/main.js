@@ -30,7 +30,7 @@ window.FucaiMain = (function () {
     spanSet: [0,1,2,3,4,5,6,7,8,9],  // v5.8.15:跨度 Set 模式(支持任意范围,默认全选)
     loose: false,      // 严格
     highConfOnly: false,  // v5.7.16:用全部公式
-    killContain: { bai: [0,1,2,3,4,5,6,7,8,9], shi: [0,1,2,3,4,5,6,7,8,9], ge: [0,1,2,3,4,5,6,7,8,9] },  // v5.8.15:分位杀(默认全选,点掉=杀该位)
+    killContain: [],   // v5.8.15:杀组选(0-9 多选,任一位含此数都排除)
     last: null
   };
   // 定位复式
@@ -954,35 +954,18 @@ window.FucaiMain = (function () {
                 <span>🚫 杀组选(0-9,多选)</span>
                 <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 含此数的<strong>全部组三/组六</strong>都排除</span>
               </div>
-              <div>
+              <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
                 ${(() => {
-                  // v5.8.15:分位杀(百/十/个 各 0-9 chip,默认全选=on 绿,点 off=杀 红)
-                  const kp = _killPool;
-                  const posHot = { bai: new Set(), shi: new Set(), ge: new Set() };
-                  if (kp) {
-                    ['bai', 'shi', 'ge'].forEach(pos => {
-                      (kp[pos] || []).forEach(x => { if (x.rate >= 92) posHot[pos].add(x.code); });
-                    });
-                  }
-                  if (!_pickState.killContain || Array.isArray(_pickState.killContain)) {
-                    _pickState.killContain = { bai: [0,1,2,3,4,5,6,7,8,9], shi: [0,1,2,3,4,5,6,7,8,9], ge: [0,1,2,3,4,5,6,7,8,9] };
-                  }
-                  const renderRow = (pos, label, color) => {
-                    return `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                      <span style="font-size:11px;color:${color};font-weight:bold;min-width:48px;">${label}:</span>
-                      ${[0,1,2,3,4,5,6,7,8,9].map(n => {
-                        const on = (_pickState.killContain[pos] || []).includes(n);
-                        const isHot = posHot[pos].has(n);
-                        const hotBadge = isHot && !on ? '⭐' : '';
-                        return `<button class="opt-btn xs ${on ? 'on' : ''} ${isHot && !on ? 'pos-hot' : ''}" data-kc-pos="${pos}-${n}" style="${on ? 'background:rgba(110,240,158,.15);border:1.5px solid #6ef09e;color:#6ef09e;font-weight:bold;' : 'background:rgba(255,80,96,.2);border:1.5px solid #ff5060;color:#ff5060;font-weight:bold;text-decoration:line-through;'}" title="${on ? '✓ 允许此位为 ' + n : '🚫 杀此位 ' + n}">${hotBadge}${n}</button>`;
-                      }).join('')}
-                    </div>`;
-                  };
-                  return renderRow('bai', '🎯 百位', '#6ef09e') + renderRow('shi', '🎯 十位', '#f3c969') + renderRow('ge', '🎯 个位', '#ff8d8d');
+                  // v5.8.15:杀组选 0-9(任一位含此数都排除 — 3D 组选不分位)
+                  const kcSet = new Set(_pickState.killContain || []);
+                  return [0,1,2,3,4,5,6,7,8,9].map(n => {
+                    const killed = kcSet.has(n);
+                    return `<button class="opt-btn xs ${killed ? 'on' : ''}" data-kc="${n}" style="${killed ? 'background:rgba(255,80,96,.2);border:1.5px solid #ff5060;color:#ff5060;font-weight:bold;text-decoration:line-through;' : 'background:rgba(110,240,158,.12);border:1.5px solid #6ef09e;color:#6ef09e;font-weight:bold;'}" title="${killed ? '🗑 已杀(任一位含),点击恢复' : '点击 = 加入杀组选(任一位含都排除)'}">${n}</button>`;
+                  }).join('');
                 })()}
               </div>
               <div style="font-size:11px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-                💡 <b style="color:#6ef09e;">绿 = 允许</b> · <b style="color:#ff5060;">红 = 杀</b>(3D 分位,杀百位 ≠ 杀十位 ≠ 杀个位)
+                💡 <b style="color:#6ef09e;">绿 = 未杀</b> · <b style="color:#ff5060;">红 = 已杀(任一位含)</b> · 点切换
                 ${(() => {
                   const kc = _pickState.killContain || {};
                   const baiKilled = 10 - (kc.bai || []).length;
