@@ -976,7 +976,7 @@ window.FucaiMain = (function () {
                 })()}
               </div>
               <div style="font-size:11px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-                💡 <b style="color:#6ef09e;">绿 = 未杀</b> · <b style="color:#ff5060;">红 = 已杀(任一位含)</b> · 点切换
+                💡 <b style="color:#6ef09e;">绿 = 未杀</b> · <b style="color:#ff5060;">红 = 已杀(任一位含)</b> · 点切换 · <span style="color:#888;">⭐推荐=参考,不影响选号</span>
                 ${(() => {
                   // v5.8.16:杀组选是不分位的(任一位含此数都排除),Array 长度 = 杀了几个号
                   const kc = _pickState.killContain || [];
@@ -1006,9 +1006,9 @@ window.FucaiMain = (function () {
                   }
                   if (top5.length === 0) return '';
                   const posLabel = { bai: '百', shi: '十', ge: '个' };
-                  return `<button class="opt-btn xs" data-kc-auto-add style="background:linear-gradient(135deg,#ff8d8d,#ff5060);color:#fff;font-weight:700;padding:3px 8px;margin-left:8px;" title="点击 = 自动加入 5 个 准确率最高的定位杀号(从 3 位合并)">⭐ 自动推荐 (top 5)</button>
+                  return `<span class="opt-btn xs" style="background:rgba(255,80,96,.15);color:#ff5060;font-weight:600;padding:3px 8px;margin-left:8px;cursor:default;" title="推荐参考 — 不影响选号,要杀请点上方 0-9 chip">⭐ 自动推荐 (top 5 仅供参考)</span>`;
                     <span style="display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle;">
-                      ${top5.map(x => `<span class="opt-code" data-kc-add="${x.code}" style="display:inline-block;background:rgba(255,80,96,.12);border:1px solid rgba(255,80,96,.4);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,80,96,.25)'" onmouseout="this.style.background='rgba(255,80,96,.12)'" title="点击 = 加入 ${x.code} 到杀组选(单独添加)">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
+                      ${top5.map(x => `<span style="display:inline-block;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;" title="推荐参考 — 不影响选号,要杀请点上方 0-9 chip">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
                     </span>`;
                 })()}
               </div>
