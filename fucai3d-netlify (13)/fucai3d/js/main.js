@@ -1075,21 +1075,6 @@ window.FucaiMain = (function () {
 
         <!-- 候选预览 -->
         <div class="candidate-box">
-          <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;line-height:1.5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div>
-              <div style="margin-bottom:4px;">${excludeInfo}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:10px;">
-                <span style="background:rgba(110,240,158,.15);border:1.5px solid #6ef09e;color:#6ef09e;padding:2px 6px;border-radius:4px;font-weight:bold;">✓ 候选 = 点击 → 加杀</span>
-                <span style="background:rgba(255,80,96,.2);border:1.5px solid #ff5060;color:#ff5060;padding:2px 6px;border-radius:4px;font-weight:bold;text-decoration:line-through;">🗑 我的杀 = 点击恢复</span>
-                <span style="background:rgba(255,80,96,.12);border:1.5px dashed #ff5060;color:#ff5060;padding:2px 6px;border-radius:4px;font-weight:bold;">🚫 系统杀 = 点击反对</span>
-                <span style="background:rgba(243,201,105,.1);border:1.5px dotted #a07a3a;color:#a07a3a;padding:2px 6px;border-radius:4px;font-weight:bold;text-decoration:line-through;">⚠️ 反对 = 取消反对</span>
-              </div>
-            </div>
-            <div style="display:flex;gap:4px;flex-shrink:0;">
-              ${((userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size) > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${(userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size}</button>` : ''}
-              ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除反对 ${userAntiKills.size}</button>` : ''}
-            </div>
-          </div>
           <div class="cand-col">
             <div class="cand-label">
               百位 <span style="color:var(--dan);">${restBai.length}</span> 候选
