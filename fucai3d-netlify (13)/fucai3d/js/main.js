@@ -2130,6 +2130,30 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.8.16:自动推荐 top 5 — 加 5 个 rate 最高的定位杀号(3 位合并去重)
+    document.querySelectorAll('[data-kc-auto-add]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!_killPool) return;
+        if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
+        const all = [];
+        ['bai', 'shi', 'ge'].forEach(pos => {
+          (_killPool[pos] || []).forEach(x => { all.push({ code: x.code, rate: x.rate, pos }); });
+        });
+        const seen = new Set(_pickState.killContain);
+        all.sort((a, b) => b.rate - a.rate);
+        let added = 0;
+        for (const x of all) {
+          if (seen.has(x.code)) continue;
+          seen.add(x.code);
+          _pickState.killContain.push(x.code);
+          added++;
+          if (added >= 5) break;
+        }
+        toast(added > 0 ? `⭐ 已加 ${added} 个定位杀(top 5 准确率)到杀组选` : '已全部加入');
+        _pickState.last = null;
+        switchTab('pick');
+      });
+    });
 // v5.8+ 手动刷新推荐(重新算 suggestKillContain)
     document.querySelectorAll('[data-refresh-suggest]').forEach(b => {
       b.addEventListener('click', () => {
