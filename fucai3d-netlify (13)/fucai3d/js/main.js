@@ -2130,6 +2130,15 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
+    // v5.8.16:清除杀组选 — 全部清空
+    document.querySelectorAll('[data-kc-clear-all]').forEach(b => {
+      b.addEventListener('click', () => {
+        _pickState.killContain = [];
+        _pickState.last = null;
+        toast('🗑 已清除所有杀组选');
+        switchTab('pick');
+      });
+    });
     // v5.8.16:自动推荐 top 5 — 加 5 个 rate 最高的定位杀号(3 位合并去重)
     document.querySelectorAll('[data-kc-auto-add]').forEach(b => {
       b.addEventListener('click', () => {
