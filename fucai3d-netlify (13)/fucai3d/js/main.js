@@ -30,7 +30,7 @@ window.FucaiMain = (function () {
     spanSet: [0,1,2,3,4,5,6,7,8,9],  // v5.8.15:跨度 Set 模式(支持任意范围,默认全选)
     loose: false,      // 严格
     highConfOnly: false,  // v5.7.16:用全部公式
-    killContain: [],   // v5.8+:杀组选(0-9 多选,含此数的全部排除)
+    killContain: { bai: [0,1,2,3,4,5,6,7,8,9], shi: [0,1,2,3,4,5,6,7,8,9], ge: [0,1,2,3,4,5,6,7,8,9] },  // v5.8.15:分位杀(默认全选,点掉=杀该位)
     last: null
   };
   // 定位复式
@@ -700,7 +700,13 @@ window.FucaiMain = (function () {
     // v5.7.19:反对 ≠ 恢复成候选,反对 = 标记"我反对这个号被杀",但**选号时不选**
     //   候选 = 0-9 - 真正的排除(系统杀,含反对标记的) - 用户手动杀 - 杀组选
     //   反对的号 显示在"反对区"(虚线橙黄),不进绿色候选
-    const killContainSetUI = new Set(_pickState.killContain || []);
+    // v5.8.15:分位杀(3 位并集)
+    const kcUI = _pickState.killContain || {};
+    const killContainSetUI = new Set([
+      ...(Array.isArray(kcUI) ? kcUI : (kcUI.bai || [])),
+      ...(Array.isArray(kcUI) ? [] : (kcUI.shi || [])),
+      ...(Array.isArray(kcUI) ? [] : (kcUI.ge  || []))
+    ]);
     const allExclude = new Set([...realExclude, ...userKills, ...killContainSetUI]);
     const candidates = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
     const restBai = [...candidates];
@@ -937,7 +943,7 @@ window.FucaiMain = (function () {
             <div>
               <div class="opt-mini-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                 <span>📊 跨度(0-9)</span>
-                <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 当前 <strong style="color:var(--dan);">${_pickState.spanMin} ~ ${_pickState.spanMax}</strong> · 点 = 选范围</span>
+                <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 当前 <strong style="color:var(--dan);">${(_pickState.spanSet || []).join(',') || '0-9'}</strong> · 点 = 切换 on/off(支持任意范围)</span>
               </div>
               <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
                 ${spanBtns.join('')}
@@ -948,65 +954,84 @@ window.FucaiMain = (function () {
                 <span>🚫 杀组选(0-9,多选)</span>
                 <span style="font-size:11px;color:var(--text-3);font-weight:normal;">· 含此数的<strong>全部组三/组六</strong>都排除</span>
               </div>
-              <div class="opt-row" style="flex-wrap:wrap;gap:4px;">
+              <div>
                 ${(() => {
-                  // v5.8.15:从定位杀推荐取前 4(按 rate 降序)高亮显示
+                  // v5.8.15:分位杀(百/十/个 各 0-9 chip,默认全选=on 绿,点 off=杀 红)
                   const kp = _killPool;
-                  const posHot = new Set();
+                  const posHot = { bai: new Set(), shi: new Set(), ge: new Set() };
                   if (kp) {
-                    // 收集所有 92%+ 数字
-                    const all = [];
                     ['bai', 'shi', 'ge'].forEach(pos => {
-                      (kp[pos] || []).forEach(x => {
-                        if (x.rate >= 92) all.push({ code: x.code, rate: x.rate });
-                      });
+                      (kp[pos] || []).forEach(x => { if (x.rate >= 92) posHot[pos].add(x.code); });
                     });
-                    // 按 rate 降序 + code 升序,去重取前 4
-                    all.sort((a, b) => b.rate - a.rate || a.code - b.code);
-                    const seen = new Set();
-                    for (const item of all) {
-                      if (seen.size >= 4) break;
-                      if (seen.has(item.code)) continue;
-                      seen.add(item.code);
-                      posHot.add(item.code);
-                    }
                   }
-                  return [0,1,2,3,4,5,6,7,8,9].map(n => {
-                    const checked = (_pickState.killContain || []).includes(n);
-                    const isHot = posHot.has(n);
-                    const hotBadge = isHot ? '⭐' : '';
-                    return `<button class="opt-btn xs ${checked ? 'on' : ''} ${isHot ? 'pos-hot' : ''}" data-kc="${n}" style="${checked ? 'background:linear-gradient(135deg,#ff5060,#ef4444);color:#fff;font-weight:700;border-color:#ff5060;box-shadow:0 0 8px rgba(255,80,96,.35);' : isHot ? 'border:1.5px solid #ff8d8d;background:rgba(255,141,141,.18);color:#ff8d8d;font-weight:800;box-shadow:0 0 6px rgba(255,141,141,.4);' : ''}" title="${isHot ? '⭐ 定位杀推荐(前4准的)' : ''}">${hotBadge}${n}</button>`;
-                  }).join('');
+                  if (!_pickState.killContain || Array.isArray(_pickState.killContain)) {
+                    _pickState.killContain = { bai: [0,1,2,3,4,5,6,7,8,9], shi: [0,1,2,3,4,5,6,7,8,9], ge: [0,1,2,3,4,5,6,7,8,9] };
+                  }
+                  const renderRow = (pos, label, color) => {
+                    return `<div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                      <span style="font-size:11px;color:${color};font-weight:bold;min-width:48px;">${label}:</span>
+                      ${[0,1,2,3,4,5,6,7,8,9].map(n => {
+                        const on = (_pickState.killContain[pos] || []).includes(n);
+                        const isHot = posHot[pos].has(n);
+                        const hotBadge = isHot && !on ? '⭐' : '';
+                        return `<button class="opt-btn xs ${on ? 'on' : ''} ${isHot && !on ? 'pos-hot' : ''}" data-kc-pos="${pos}-${n}" style="${on ? 'background:rgba(110,240,158,.15);border:1.5px solid #6ef09e;color:#6ef09e;font-weight:bold;' : 'background:rgba(255,80,96,.2);border:1.5px solid #ff5060;color:#ff5060;font-weight:bold;text-decoration:line-through;'}" title="${on ? '✓ 允许此位为 ' + n : '🚫 杀此位 ' + n}">${hotBadge}${n}</button>`;
+                      }).join('')}
+                    </div>`;
+                  };
+                  return renderRow('bai', '🎯 百位', '#6ef09e') + renderRow('shi', '🎯 十位', '#f3c969') + renderRow('ge', '🎯 个位', '#ff8d8d');
                 })()}
               </div>
               <div style="font-size:11px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-                💡 杀 1 个数:1000 → 702 注(-30%) · 杀 2 个:-54% · 杀 3 个:-73%<br>
-                ${(_pickState.killContain && _pickState.killContain.length > 0) ? `<strong style="color:#ff5060;">已选: ${_pickState.killContain.sort((a,b)=>a-b).join('、')}(共 ${_pickState.killContain.length} 个)</strong>` : '点击数字 = 加入杀组选(再次点击 = 取消)'}
+                💡 <b style="color:#6ef09e;">绿 = 允许</b> · <b style="color:#ff5060;">红 = 杀</b>(3D 分位,杀百位 ≠ 杀十位 ≠ 杀个位)
                 ${(() => {
-                  // v5.8.15:一键加定位杀 92%+
+                  const kc = _pickState.killContain || {};
+                  const baiKilled = 10 - (kc.bai || []).length;
+                  const shiKilled = 10 - (kc.shi || []).length;
+                  const geKilled = 10 - (kc.ge || []).length;
+                  const total = baiKilled + shiKilled + geKilled;
+                  if (total > 0) {
+                    return `<strong style="color:#ff5060;">已杀 ${total} 位(百${baiKilled} 十${shiKilled} 个${geKilled})</strong>`;
+                  }
+                  return '<span style="color:#888;">点击 = 切换(再点恢复)</span>';
+                })()}
+                ${(() => {
                   const kp = _killPool;
                   if (!kp) return '';
-                  const posHot = new Set();
+                  const posHot = { bai: new Set(), shi: new Set(), ge: new Set() };
                   ['bai', 'shi', 'ge'].forEach(pos => {
-                    const list = (kp[pos] || []);
-                    list.forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
+                    (kp[pos] || []).forEach(x => { if (x.rate >= 92) posHot[pos].add(x.code); });
                   });
-                  if (posHot.size === 0) return '';
-                  return `<button class="opt-btn xs" data-kc-add-pos style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;padding:3px 8px;margin-left:auto;" title="一键加定位杀 92%+ 数字到杀组选">⭐ 定位杀 92%+ (${posHot.size}个)</button>`;
+                  const total = posHot.bai.size + posHot.shi.size + posHot.ge.size;
+                  if (total === 0) return '';
+                  return `<button class="opt-btn xs" data-kc-add-pos style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;padding:3px 8px;margin-left:auto;" title="一键把定位杀 92%+ 数字标记为杀(分位精确)">⭐ 一键杀定位 (${total}个)</button>`;
                 })()}
               </div>
               ${(() => {
-                // v5.8.15:杀组选 + 排除集合 冲突检测
-                const kcSet = new Set(_pickState.killContain || []);
+                // v5.8.15:分位版 — 杀组选按 3 位并集(任一位被杀的号都算)
+                const kcUI = _pickState.killContain || {};
+                const kcSet = new Set([
+                  ...(Array.isArray(kcUI) ? kcUI : (kcUI.bai || [])),
+                  ...(Array.isArray(kcUI) ? [] : (kcUI.shi || [])),
+                  ...(Array.isArray(kcUI) ? [] : (kcUI.ge  || []))
+                ]);
+                const kcPos = {
+                  bai: (Array.isArray(kcUI) ? [] : (kcUI.bai || [])),
+                  shi: (Array.isArray(kcUI) ? [] : (kcUI.shi || [])),
+                  ge:  (Array.isArray(kcUI) ? [] : (kcUI.ge  || []))
+                };
                 const axisNums = (_killPool && _killPool.axis && _killPool.axis.axisNumbers) || [];
                 const shiqiweiKill = (_killPool && _killPool.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code);
                 const axisSet = new Set([...axisNums, ...shiqiweiKill]);
                 const overlap = [...kcSet].filter(n => axisSet.has(n));
                 const totalUnique = new Set([...kcSet, ...axisSet]).size;
                 if (kcSet.size === 0 && axisSet.size === 0) return '';
+                const baiK = 10 - kcPos.bai.length;
+                const shiK = 10 - kcPos.shi.length;
+                const geK  = 10 - kcPos.ge.length;
                 return `<div style="margin-top:8px;padding:6px 10px;background:rgba(110,240,158,.06);border:1px solid rgba(110,240,158,.2);border-radius:6px;font-size:11px;color:var(--text-2);">
-                  📊 <b>杀号汇总</b>:杀组选 <b style="color:#ff5060;">${kcSet.size}</b> 个 + 排除集合(十位轴) <b style="color:#f3c969;">${axisSet.size}</b> 个 = <b style="color:#6ef09e;">${totalUnique}</b> 个不重复
-                  ${overlap.length > 0 ? `<br>⚠️ <b style="color:#f3c969;">冲突 ${overlap.length} 个</b>:${overlap.sort((a,b)=>a-b).join('、')} <span style="color:#888;">(杀组选已全位覆盖,排除集合只加其他位的)</span>` : '<br>✅ 无冲突(两个杀的位不重叠)'}
+                  📊 <b>分位杀</b>:百位 ${baiK} + 十位 ${shiK} + 个位 ${geK} = <b style="color:#6ef09e;">${kcSet.size}</b> 个不重复号(任一位含都杀)
+                  ${axisSet.size > 0 ? `<br>➕ 十位轴 <b style="color:#f3c969;">${axisSet.size}</b> 个 = <b style="color:#6ef09e;">${totalUnique}</b> 个不重复` : ''}
+                  ${overlap.length > 0 ? `<br>⚠️ <b style="color:#f3c969;">重复 ${overlap.length} 个</b>:${overlap.sort((a,b)=>a-b).join('、')}` : ''}
                 </div>`;
               })()}
               ${(() => {
@@ -2093,7 +2118,12 @@ window.FucaiMain = (function () {
         const shiqiweiKill = new Set((kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code));
         const realExclude = new Set([...axisNums, ...shiqiweiKill]);
         const userKills = new Set(getUserKills());
-        const killContainSet = new Set(_pickState.killContain || []);
+        const kcBtn = _pickState.killContain || {};
+        const killContainSet = new Set([
+          ...(Array.isArray(kcBtn) ? kcBtn : (kcBtn.bai || [])),
+          ...(Array.isArray(kcBtn) ? [] : (kcBtn.shi || [])),
+          ...(Array.isArray(kcBtn) ? [] : (kcBtn.ge  || []))
+        ]);
         const allExclude = new Set([...realExclude, ...userKills, ...killContainSet]);
         const candLen = [0,1,2,3,4,5,6,7,8,9].filter(n => !allExclude.has(n)).length;
         // 算 maxUnique
@@ -2426,14 +2456,27 @@ window.FucaiMain = (function () {
     const userKills = new Set(getUserKills());
     const userAntiKills = new Set(getUserAntiKills());
     const effectiveExclude = new Set([...realExclude].filter(n => !userAntiKills.has(n)));
-    // v5.8+:用户杀组选(0-9 多选)→ 含此数的所有号都排除
-    const killContainSet = new Set(_pickState.killContain || []);
+    // v5.8.15:分位杀(百/十/个 各减,但 doGenerate 也按"任一位被杀的号都排除"算 allExclude)
+    const kcGen = _pickState.killContain || {};
+    const killContainSet = new Set([
+      ...(Array.isArray(kcGen) ? kcGen : (kcGen.bai || [])),
+      ...(Array.isArray(kcGen) ? [] : (kcGen.shi || [])),
+      ...(Array.isArray(kcGen) ? [] : (kcGen.ge  || []))
+    ]);
     const allExclude = new Set([...effectiveExclude, ...userKills, ...killContainSet]);
 
-    // 候选 = 0-9 - allExclude
-    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !allExclude.has(n));
-    const restShi = [...restBai];
-    const restGe  = [...restBai];
+    // v5.8.15:分位杀(百/十/个 各自从 0-9 减)
+    const baiKilled = new Set((_pickState.killContain && _pickState.killContain.bai) || []);
+    const shiKilled = new Set((_pickState.killContain && _pickState.killContain.shi) || []);
+    const geKilled  = new Set((_pickState.killContain && _pickState.killContain.ge)  || []);
+    // 兼容老 array(整组选)
+    if (Array.isArray(_pickState.killContain)) {
+      _pickState.killContain.forEach(n => { baiKilled.add(n); shiKilled.add(n); geKilled.add(n); });
+    }
+    const baseAll = new Set([...realExclude, ...userKills]);
+    const restBai = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !baiKilled.has(n));
+    const restShi = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !shiKilled.has(n));
+    const restGe  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => !baseAll.has(n) && !geKilled.has(n));
 
     // v5.8+:杀组选影响:含此数 → 选号必含 → 候选 0 个 = 选不到
     if (killContainSet.size > 0) {
