@@ -1024,7 +1024,7 @@ window.FucaiMain = (function () {
                   const posLabel = { bai: '百', shi: '十', ge: '个' };
                   return `<button class="opt-btn xs" data-kc-auto-add style="background:linear-gradient(135deg,#ff8d8d,#ff5060);color:#fff;font-weight:700;padding:3px 8px;margin-left:8px;" title="点击 = 自动加入 5 个 准确率最高的定位杀号(从 3 位合并)">⭐ 自动推荐 (top 5)</button>
                     <span style="display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle;">
-                      ${top5.map(x => `<span style="display:inline-block;background:rgba(255,80,96,.12);border:1px solid rgba(255,80,96,.4);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
+                      ${top5.map(x => `<span class="opt-code" data-kc-add="${x.code}" style="display:inline-block;background:rgba(255,80,96,.12);border:1px solid rgba(255,80,96,.4);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,80,96,.25)'" onmouseout="this.style.background='rgba(255,80,96,.12)'" title="点击 = 加入 ${x.code} 到杀组选(单独添加)">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
                     </span>`;
                 })()}
               </div>
