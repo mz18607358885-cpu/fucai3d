@@ -2502,9 +2502,10 @@ window.FucaiMain = (function () {
           ? `改"组六/混合/不限"可获得更多组合`
           : `请减少杀号数量`);
       const downN = Math.floor(maxUnique);
-      toast(`💡 ${typeName} 最多 ${downN} 注(候选 ${candLen} 个号),已自动改为 ${downN} 注。要 ${_pickState.count} 注请${hint}`);
-      // 自动降级,继续走(下面的 allUniqueKeys 已枚举,只取前 downN)
+      // v5.8.17:同时改 _pickState.count 和 n(因 n 是早期 const 拷贝)
       _pickState.count = downN;
+      n = downN;  // 修:n = _pickState.count 在 doGenerate 顶部 const,需重新赋值
+      toast(`💡 ${typeName} 最多 ${downN} 注(候选 ${candLen} 个号),已自动改为 ${downN} 注。要 ${_pickState.count} 注请${hint}`);
     }
     // v5.8.15:枚举所有 unique 组合(确保选 N 注 = N unique,不漏)
     //   先枚举所有 C(n,3) 组六 / C(n,2)*(n-2) 组三 / 1 豹子
