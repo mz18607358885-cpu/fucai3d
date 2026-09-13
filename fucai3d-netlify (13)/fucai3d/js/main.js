@@ -2072,48 +2072,7 @@ window.FucaiMain = (function () {
     document.querySelectorAll('[data-pick-count]').forEach(b => {
       b.addEventListener('click', () => { _pickState.count = +b.dataset.pickCount; switchTab('pick'); });
     });
-    // v5.8.15:全选 maxUnique 按钮(根据当前候选数自动算最大可能组合)
-    const selectAllBtn = document.querySelector('#selectAllCount');
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => {
-        // 算当前候选数(从排除集合 + 杀组选 + 我的杀算)
-        const kp = _killPool;
-        if (!kp) { toast('⚠️ 数据未加载'); return; }
-        const axisNums = new Set((kp.axis && kp.axis.axisNumbers) || []);
-        const shiqiweiKill = new Set((kp.kills || []).filter(k => k.name === '上期十位直接杀').map(k => k.code));
-        const realExclude = new Set([...axisNums, ...shiqiweiKill]);
-        const userKillsRawBtn = getUserKills();
-        const userKillsFlat = new Set([
-          ...(Array.isArray(userKillsRawBtn) ? userKillsRawBtn : (userKillsRawBtn.bai || [])),
-          ...(Array.isArray(userKillsRawBtn) ? [] : (userKillsRawBtn.shi || [])),
-          ...(Array.isArray(userKillsRawBtn) ? [] : (userKillsRawBtn.ge  || []))
-        ]);
-        const kcBtn = _pickState.killContain || {};
-        const killContainSet = new Set([
-          ...(Array.isArray(kcBtn) ? kcBtn : (kcBtn.bai || [])),
-          ...(Array.isArray(kcBtn) ? [] : (kcBtn.shi || [])),
-          ...(Array.isArray(kcBtn) ? [] : (kcBtn.ge  || []))
-        ]);
-        const allExclude = new Set([...realExclude, ...userKillsFlat, ...killContainSet]);
-        const candLen = [0,1,2,3,4,5,6,7,8,9].filter(n => !allExclude.has(n)).length;
-        // 算 maxUnique
-        let maxUnique = 0;
-        if (candLen >= 3) maxUnique += candLen * (candLen-1) * (candLen-2) / 6;
-        if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);
-        if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
-        if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
-        if (maxUnique === 0) {
-          toast(`⚠️ 候选 ${candLen} 个号不够组${_pickState.type === 'zu6' ? '六' : (_pickState.type === 'zu3' ? '三' : '六/三')} (至少 3 个 / 2 个)`);
-          return;
-        }
-        // 限 50 注(避免 1 次生成太多)
-        const target = Math.min(Math.floor(maxUnique), 50);
-        _pickState.count = target;
-        toast(`🎯 全选:候选 ${candLen} 个号 → 自动选 ${target} 注 (${_pickState.type})`);
-        switchTab('pick');
-      });
-    }
-    // 奇偶
+// 奇偶
     document.querySelectorAll('[data-oe]').forEach(b => {
       b.addEventListener('click', () => { _pickState.oddEven = b.dataset.oe; switchTab('pick'); });
     });
@@ -2185,33 +2144,7 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
-    // v5.8.15 修:一键加定位杀 92%+ — 每位只取 rate 最高的 1 个(合计最多 3 个,避免杀太多选不到)
-    document.querySelectorAll('[data-kc-add-pos]').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!_killPool) return;
-        if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
-        const posHot = new Set();
-        ['bai', 'shi', 'ge'].forEach(pos => {
-          const list = (_killPool[pos] || []).filter(x => x.rate >= 92).sort((a, b) => b.rate - a.rate);
-          if (list[0]) posHot.add(list[0].code);  // 每位只取第 1 名
-        });
-        let added = 0;
-        posHot.forEach(n => {
-          if (!_pickState.killContain.includes(n)) {
-            _pickState.killContain.push(n);
-            added++;
-          }
-        });
-        if (added > 0) {
-          toast(`⭐ 已加 ${added} 个定位杀 92%+ 数字到杀组选(每位置 1 个)`);
-        } else {
-          toast('已全部加入(或 0 个 92%+ 数字)');
-        }
-        _pickState.last = null;
-        switchTab('pick');
-      });
-    });
-    // v5.8+ 手动刷新推荐(重新算 suggestKillContain)
+// v5.8+ 手动刷新推荐(重新算 suggestKillContain)
     document.querySelectorAll('[data-refresh-suggest]').forEach(b => {
       b.addEventListener('click', () => {
         if (!_result) return;
