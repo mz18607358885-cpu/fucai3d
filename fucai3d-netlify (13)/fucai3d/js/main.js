@@ -1050,7 +1050,7 @@ window.FucaiMain = (function () {
             </button>
           </div>
           <div style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.5;">
-            💡 大数据加权(200期热号×1.5/对码×1.1/冷号×0.4) + 自学习(上期选过→降权60%避重)
+            💡 候选号直接枚举(不按权重优先 — 简单随机)
           </div>
         </div>
 
@@ -2436,28 +2436,13 @@ window.FucaiMain = (function () {
     const last1 = new Set(historyPicks.slice(-1).flat().map(x => +x));
     const last2 = new Set(historyPicks.slice(-2, -1).flat().map(x => +x));
 
-    function buildWeight(rest, pairSet) {
-      // 给每个候选号算权重
-      const weighted = [];
-      for (const n of rest) {
-        let w = 1.0;
-        if (hotBoth.has(n)) w = Math.max(w, 1.5);   // 短期 ∩ 中期 = 真热
-        else if (hot4Only.has(n)) w = Math.max(w, 1.2);  // 短期热
-        else if (hot30.has(n)) w = Math.max(w, 1.0);  // 中期热
-        if (warm.has(n)) w = Math.max(w, 0.8);
-        if (cold.has(n)) w = Math.max(w, 0.4);
-        if (pairSet.has(n)) w = Math.max(w, 1.1);
-        // 自学习:上期选过 → 降权(避免连续重复)
-        if (last1.has(n)) w *= 0.4;
-        else if (last2.has(n)) w *= 0.7;
-        weighted.push({ code: n, weight: w });
-      }
-      return weighted;
+    // v5.8.16:权重设定取消 — 选号直接 random / 顺序选,不按热号/对码加权
+    function buildWeight(rest) {
+      return rest.map(n => ({ code: n, weight: 1.0 }));
     }
-
-    const wBai = buildWeight(restBai, pairBai);
-    const wShi = buildWeight(restShi, pairShi);
-    const wGe  = buildWeight(restGe,  pairGe);
+    const wBai = buildWeight(restBai);
+    const wShi = buildWeight(restShi);
+    const wGe  = buildWeight(restGe);
 
     // 加权随机选(用 cumulative distribution)
     function pickWeighted(weighted) {
