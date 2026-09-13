@@ -2750,7 +2750,12 @@ window.FucaiMain = (function () {
       hotBoth.has(x.a) || hotBoth.has(x.b) || hotBoth.has(x.c) ||
       hot4Only.has(x.a) || hot4Only.has(x.b) || hot4Only.has(x.c)
     ).length;
-    toast(`✅ 已从候选(百${restBai.length})加权选 ${picks.length} 注 · ${usedHot} 注含热号 · 已自学习`);
+    const expectedUnique = Math.floor(maxUnique);
+    if (picks.length < expectedUnique) {
+      toast(`⚠️ 候选 ${restBai.length} 个号 → 期望 ${expectedUnique} 注 unique,实际只 ${picks.length} 注(可能因约束太严或重复跳过)`);
+    } else {
+      toast(`✅ 已从候选(百${restBai.length})加权选 ${picks.length} 注 · ${usedHot} 注含热号 · 已自学习`);
+    }
     switchTab('pick');
   }
 
