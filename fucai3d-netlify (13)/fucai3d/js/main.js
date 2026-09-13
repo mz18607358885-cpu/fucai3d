@@ -1006,9 +1006,9 @@ window.FucaiMain = (function () {
                   }
                   if (top5.length === 0) return '';
                   const posLabel = { bai: '百', shi: '十', ge: '个' };
-                  return `<span class="opt-btn xs" style="background:rgba(255,80,96,.15);color:#ff5060;font-weight:600;padding:3px 8px;margin-left:8px;cursor:default;" title="推荐参考 — 不影响选号,要杀请点上方 0-9 chip">⭐ 自动推荐 (top 5 仅供参考)</span>`;
+                  return `<span class="opt-btn xs" style="background:rgba(255,80,96,.15);color:#ff5060;font-weight:600;padding:3px 8px;margin-left:8px;cursor:default;" title="推荐参考 — 不影响选号">⭐ 自动推荐 (top 5 仅供参考)</span>
                     <span style="display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle;">
-                      ${top5.map(x => `<span style="display:inline-block;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;" title="推荐参考 — 不影响选号,要杀请点上方 0-9 chip">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
+                      ${top5.map(x => `<span style="display:inline-block;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:bold;color:#ff5060;line-height:1.4;" title="推荐参考 — 不影响选号">${x.code}<span style="color:#ff8d8d;font-weight:normal;"> ${x.rate.toFixed(1)}%[${posLabel[x.pos]}]</span></span>`).join('')}
                     </span>`;
                 })()}
               </div>
