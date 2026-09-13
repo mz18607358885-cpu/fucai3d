@@ -2602,15 +2602,17 @@ window.FucaiMain = (function () {
     if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
     if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
     if (maxUnique < _pickState.count) {
-      // v5.8.15:用户选了 N 注但 unique 不够 → 报约束太严(不自动改 mixed,让用户自己改)
+      // v5.8.15:用户选了 N 注但 unique 不够 → 自动降为 maxUnique + 友好提示
       const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
       const hint = _pickState.type === 'zu6'
         ? `改"组三/混合/不限"可获得更多组合`
         : (_pickState.type === 'zu3'
           ? `改"组六/混合/不限"可获得更多组合`
           : `请减少杀号数量`);
-      toast(`⚠️ 约束太严:候选 ${candLen} 个号 → 只能生成 ${Math.floor(maxUnique)} 注${typeName},但要 ${_pickState.count} 注。\n请减少杀号数量(当前 ${killContainSet.size} 个组选 + ${axisNums.size + shiqiweiKill.size} 个排除) 或${hint}`);
-      return;
+      const downN = Math.floor(maxUnique);
+      toast(`💡 ${typeName} 最多 ${downN} 注(候选 ${candLen} 个号),已自动改为 ${downN} 注。要 ${_pickState.count} 注请${hint}`);
+      // 自动降级,继续走(下面的 allUniqueKeys 已枚举,只取前 downN)
+      _pickState.count = downN;
     }
     // v5.8.15:枚举所有 unique 组合(确保选 N 注 = N unique,不漏)
     //   先枚举所有 C(n,3) 组六 / C(n,2)*(n-2) 组三 / 1 豹子
