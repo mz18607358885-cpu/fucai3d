@@ -2668,23 +2668,9 @@ window.FucaiMain = (function () {
       });
     }
 
-    // 不够 N 注时(组合数不足),补重复(标 duplicate)
-    while (picks.length < n && picks.length > 0) {
-      const t = picks[Math.floor(Math.random() * picks.length)];
-      picks.push({ ...t, reason: t.reason + '·(复用)', source: 'duplicate-fill' });
-    }
-    // v5.8.15:最后去重(确保 50 注里**没有完全相同**的注)
-    const dedupedMap = new Map();
-    picks.forEach(p => {
-      // v5.8.15:3D 组选不分位置,用号码集合去重(752/257/572 = 同一注)
-      const key = [p.a, p.b, p.c].sort((x, y) => x - y).join('');
-      if (!dedupedMap.has(key)) dedupedMap.set(key, p);
-    });
-    if (dedupedMap.size < picks.length) {
-      console.log(`[doGenerate] 去重 ${picks.length} → ${dedupedMap.size}`);
-      picks.length = 0;
-      picks.push(...dedupedMap.values());
-    }
+    // v5.8.16:删补重复 + 最后去重(用户:只要不出一模一样的号码就行)
+    //   3D 组选本质不重复(组六 3 不同 / 组三 2 同 1 不同 / 豹子 3 同)
+    //   枚举时已经保证 unique,不需要补重复也不需要最后去重
 
     // ─── 自学习:保存这一期选的号 ───
     try {
