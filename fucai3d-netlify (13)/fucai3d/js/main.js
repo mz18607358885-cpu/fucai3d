@@ -994,13 +994,11 @@ window.FucaiMain = (function () {
               <div style="font-size:11px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
                 💡 <b style="color:#6ef09e;">绿 = 未杀</b> · <b style="color:#ff5060;">红 = 已杀(任一位含)</b> · 点切换
                 ${(() => {
-                  const kc = _pickState.killContain || {};
-                  const baiKilled = 10 - (kc.bai || []).length;
-                  const shiKilled = 10 - (kc.shi || []).length;
-                  const geKilled = 10 - (kc.ge || []).length;
-                  const total = baiKilled + shiKilled + geKilled;
+                  // v5.8.16:杀组选是不分位的(任一位含此数都排除),Array 长度 = 杀了几个号
+                  const kc = _pickState.killContain || [];
+                  const total = Array.isArray(kc) ? kc.length : ((kc.bai||[]).length + (kc.shi||[]).length + (kc.ge||[]).length);
                   if (total > 0) {
-                    return `<strong style="color:#ff5060;">已杀 ${total} 位(百${baiKilled} 十${shiKilled} 个${geKilled})</strong>`;
+                    return `<strong style="color:#ff5060;">已杀 ${total} 个号</strong>`;
                   }
                   return '<span style="color:#888;">点击 = 切换(再点恢复)</span>';
                 })()}
