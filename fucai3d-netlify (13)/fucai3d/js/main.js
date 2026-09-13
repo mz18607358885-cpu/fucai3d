@@ -1084,7 +1084,7 @@ window.FucaiMain = (function () {
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-shrink:0;">
-              ${(userKillsPos.bai.size + userKillsPos.shi.size + userKillsPos.ge.size) > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${userKillsPos.bai.size + userKillsPos.shi.size + userKillsPos.ge.size}</button>` : ''}
+              ${((userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size) > 0 ? `<button class="opt-btn xs" data-uk-clear>↻ 清除我杀 ${(userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size}</button>` : ''}
               ${userAntiKills.size > 0 ? `<button class="opt-btn xs" data-anti-clear>↻ 清除反对 ${userAntiKills.size}</button>` : ''}
             </div>
           </div>
@@ -1092,13 +1092,13 @@ window.FucaiMain = (function () {
             <div class="cand-label">
               百位 <span style="color:var(--dan);">${restBai.length}</span> 候选
               <span style="color:var(--text-3);"> / ${10 - restBai.length} 被杀</span>
-              ${(userKillsPos.bai.size + userKillsPos.shi.size + userKillsPos.ge.size) > 0 ? `<span style="color:#ff5060;font-size:11px;"> (含我杀 百${userKillsPos.bai.size} 十${userKillsPos.shi.size} 个${userKillsPos.ge.size})</span>` : ''}
+              ${((userKillsPos?.bai || new Set()).size + (userKillsPos?.shi || new Set()).size + (userKillsPos?.ge || new Set()).size) > 0 ? `<span style="color:#ff5060;font-size:11px;"> (含我杀 百${(userKillsPos?.bai || new Set()).size} 十${(userKillsPos?.shi || new Set()).size} 个${(userKillsPos?.ge || new Set()).size})</span>` : ''}
             </div>
             <div class="cand-list">
               ${codeList(restBai, 'bai')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKillsPos.bai.size > 0 ? Array.from(userKillsPos.bai).sort().map(n => myKillSpan(n, 'bai')).join('') : ''}
+              ${(userKillsPos?.bai || new Set()).size > 0 ? Array.from(userKillsPos?.bai || []).sort().map(n => myKillSpan(n, 'bai')).join('') : ''}
             </div>
           </div>
           <div class="cand-col">
@@ -1110,7 +1110,7 @@ window.FucaiMain = (function () {
               ${codeList(restShi, 'shi')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKillsPos.shi.size > 0 ? Array.from(userKillsPos.shi).sort().map(n => myKillSpan(n, 'shi')).join('') : ''}
+              ${(userKillsPos?.shi || new Set()).size > 0 ? Array.from(userKillsPos?.shi || []).sort().map(n => myKillSpan(n, 'shi')).join('') : ''}
             </div>
           </div>
           <div class="cand-col">
@@ -1122,7 +1122,7 @@ window.FucaiMain = (function () {
               ${codeList(restGe, 'ge')}
               ${antiRestored.size > 0 ? Array.from(antiRestored).sort().map(antiSpan).join('') : ''}
               ${realExcludeRemaining.size > 0 ? Array.from(realExcludeRemaining).sort().map(realKillSpan).join('') : ''}
-              ${userKillsPos.ge.size > 0 ? Array.from(userKillsPos.ge).sort().map(n => myKillSpan(n, 'ge')).join('') : ''}
+              ${(userKillsPos?.ge || new Set()).size > 0 ? Array.from(userKillsPos?.ge || []).sort().map(n => myKillSpan(n, 'ge')).join('') : ''}
             </div>
           </div>
         </div>
