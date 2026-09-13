@@ -757,6 +757,8 @@ window.FucaiMain = (function () {
     // v5.8.15:候选/被杀 chip 视觉强化(加图标 + 显眼配色)
     const candSpan = (n, pos) => `<span class="opt-code" data-uk-add="${n}" data-uk-add-pos="${pos||''}" title="✓ ${pos||'全'}位候选号 · 点击 → 加入该位杀号(只杀该位)" style="cursor:pointer;background:rgba(110,240,158,.15);border:2px solid #6ef09e;color:#6ef09e;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;opacity:.7;">✓</span>${n}</span>`;
     const myKillSpan = (n, pos) => `<span class="opt-code killed" data-uk-rm="${n}" data-uk-rm-pos="${pos||''}" title="🗑 ${pos||'全'}位杀号 ${n} · 点击 → 恢复候选" style="cursor:pointer;background:rgba(255,80,96,.2);border:2px solid #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🗑</span>${n}</span>`;
+    // v5.8.15:杀组选 chip(任一位含此数都排除,3D 组选不分位) — 与 myKillSpan 区分(更深的紫红色)
+    const zuxuanKillSpan = (n) => `<span class="opt-code zuxuan-killed" data-zx-rm="${n}" title="🚫 杀组选 ${n}(任一位含此数都排除)· 点击 → 取消杀组选" style="cursor:pointer;background:rgba(180,60,180,.25);border:2px solid #b43cb4;color:#d896d8;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;text-decoration:line-through;"><span style="font-size:9px;">🚫</span>${n}</span>`;
     const realKillSpan = (n) => `<span class="opt-code killed" data-anti-rm="${n}" title="🚫 系统杀 · 点击 → 我反对(恢复成候选)" style="cursor:pointer;background:rgba(255,80,96,.12);border:2px dashed #ff5060;color:#ff5060;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;"><span style="font-size:9px;">🚫</span>${n}</span>`;
     // v5.8.15:已反对/已恢复 → 绿虚线 + 白字(操作反馈:已表态)
     const antiSpan = (n) => `<span class="opt-code anti-recovered" data-anti-rm="${n}" title="✅ 已反对系统杀 · 点击 → 取消反对" style="cursor:pointer;background:rgba(110,240,158,.25);border:2px dashed #6ef09e;color:#fff;font-weight:bold;padding:2px 8px;display:inline-flex;align-items:center;gap:2px;box-shadow:0 0 6px rgba(110,240,158,.4);"><span style="font-size:9px;color:#6ef09e;">✅</span>${n}</span>`;
@@ -1126,6 +1128,22 @@ window.FucaiMain = (function () {
             </div>
           </div>
         </div>
+
+        ${(() => {
+          // v5.8.15:杀组选 已杀号码(独立显示,紫色区分,任一位含都排除)
+          const kc = _pickState.killContain || [];
+          const killedArr = Array.isArray(kc) ? kc : [...(kc.bai || []), ...(kc.shi || []), ...(kc.ge || [])];
+          if (!killedArr.length) return '';
+          return `<div style="margin-top:10px;padding:8px 10px;background:rgba(180,60,180,.08);border:1.5px dashed #b43cb4;border-radius:6px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="color:#d896d8;font-weight:bold;font-size:13px;">🚫 杀组选(已杀 ${killedArr.length} 个,任一位含都排除)</span>
+              <button class="opt-btn xs" data-kc-clear-all style="background:rgba(180,60,180,.2);border:1.5px solid #b43cb4;color:#d896d8;font-weight:bold;padding:2px 6px;margin-left:auto;">↻ 清除</button>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
+              ${[...new Set(killedArr)].sort((a, b) => a - b).map(zuxuanKillSpan).join('')}
+            </div>
+          </div>`;
+        })()}
 
         ${renderFavorites()}
 
