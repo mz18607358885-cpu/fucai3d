@@ -2566,12 +2566,16 @@ window.FucaiMain = (function () {
     let skipByConstraint = 0;
     // v5.8.15:提前算"实际可生成组六数"(避开约束太严的 toast 误导)
     const candLen = restBai.length;
-    // v5.8.15:根据 type 算 max unique(组六 / 组三 / 混合)
+    // v5.8.17:重写 maxUnique(直接按 type 算,不再叠加)
     let maxUnique = 0;
-    if (candLen >= 3) maxUnique += candLen * (candLen-1) * (candLen-2) / 6;  // 组六 C(n,3)
-    if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);  // 组三 C(n,2)*(n-2)
-    if (_pickState.type === 'zu6') maxUnique = candLen >= 3 ? candLen * (candLen-1) * (candLen-2) / 6 : 0;
-    if (_pickState.type === 'zu3') maxUnique = candLen >= 2 ? candLen * (candLen-1) / 2 * (candLen - 2) : 0;
+    const t = _pickState.type;
+    if (t === 'zu6' || t === 'mixed' || t === 'dan') {
+      if (candLen >= 3) maxUnique += candLen * (candLen-1) * (candLen-2) / 6;
+    }
+    if (t === 'zu3' || t === 'mixed' || t === 'dan') {
+      if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);
+    }
+    console.log(`[doGenerate] candLen=${candLen} type=${t} maxUnique=${maxUnique} count=${_pickState.count}`);
     if (maxUnique < _pickState.count) {
       // v5.8.15:用户选了 N 注但 unique 不够 → 自动降为 maxUnique + 友好提示
       const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
