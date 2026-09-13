@@ -704,11 +704,8 @@ window.FucaiMain = (function () {
     //   用户手动杀号 = 候选号点击加入(可点回恢复)
     //   候选 = 剩下的号
     //   加权在候选内区分:胆码/HIGH 1.5,默认 1.0,冷号 0.5
-    const axisNums = (kp.axis && kp.axis.axisNumbers) || [];
-    const shiqiweiKill = (kp.kills || [])
-      .filter(k => k.name === '上期十位直接杀')
-      .map(k => k.code);
-    const realExclude = new Set([...axisNums, ...shiqiweiKill]);
+    // v5.8.16:取消系统自动杀号(只留用户手动杀:杀组选 + 我的杀)
+    const realExclude = new Set();
     // v5.8.15:分位独立 userKills
     const userKillsRaw = getUserKills();
     const userKillsPos = { bai: new Set(userKillsRaw.bai || []), shi: new Set(userKillsRaw.shi || []), ge: new Set(userKillsRaw.ge || []) };
@@ -2426,15 +2423,9 @@ window.FucaiMain = (function () {
     const pairShi = new Set(FucaiFormula.pairCodes([ctx.B]));
     const pairGe  = new Set(FucaiFormula.pairCodes([ctx.C]));
 
-    // ─── 自学习:上期选过的号 + 上上期 ───
-    // 选过 1 期前 = 降权 0.4(避免完全重复)
-    // 选过 2 期前 = 降权 0.7(还热,但降)
-    let historyPicks = [];
-    try {
-      historyPicks = JSON.parse(localStorage.getItem('fucai3d_last_picks') || '[]');
-    } catch (e) {}
-    const last1 = new Set(historyPicks.slice(-1).flat().map(x => +x));
-    const last2 = new Set(historyPicks.slice(-2, -1).flat().map(x => +x));
+    // v5.8.16:取消自学习(用户:选号就是自己点掉什么剩余就生成什么)
+    const last1 = new Set();
+    const last2 = new Set();
 
     // v5.8.16:权重设定取消 — 选号直接 random / 顺序选,不按热号/对码加权
     function buildWeight(rest) {
@@ -2672,7 +2663,7 @@ window.FucaiMain = (function () {
     if (picks.length < expectedUnique) {
       toast(`⚠️ 候选 ${restBai.length} 个号 → 期望 ${expectedUnique} 注 unique,实际只 ${picks.length} 注(可能因约束太严或重复跳过)`);
     } else {
-      toast(`✅ 已从候选(百${restBai.length})加权选 ${picks.length} 注 · ${usedHot} 注含热号 · 已自学习`);
+      toast(`✅ 已生成 ${picks.length} 注(从剩余号中)`, 3000);
     }
     switchTab('pick');
   }
