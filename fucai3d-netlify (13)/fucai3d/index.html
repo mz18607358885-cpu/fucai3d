@@ -94,8 +94,8 @@
   </script>
   <script>
     // v5.8.17:清旧 SW + cache,但只清一次(用 localStorage 标记防无限 reload)
-    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v8')) {
-      localStorage.setItem('sw_cleaned_v8', '1');
+    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v9')) {
+      localStorage.setItem('sw_cleaned_v9', '1');
       navigator.serviceWorker.getRegistrations().then(function(rs) {
         rs.forEach(function(r) { r.unregister(); });
       });
