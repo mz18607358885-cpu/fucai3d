@@ -36,11 +36,23 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // v5.8.17:激进清缓存 — 清所有非当前 CACHE 的 cache(防止旧版 .js 卡住)
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))
+        keys.map((k) => {
+          if (k !== CACHE) {
+            console.log('[SW] 清掉旧 cache:', k);
+            return caches.delete(k);
+          }
+          return null;
+        })
       );
+    }).then(() => {
+      // 强制刷新所有客户端页面(让它们拿新 .js)
+      return self.clients.matchAll().then((clients) => {
+        clients.forEach((c) => c.postMessage({ type: 'sw-updated' }));
+      });
     }).then(() => self.clients.claim())
   );
 });
