@@ -2578,7 +2578,7 @@ window.FucaiMain = (function () {
     if (t === 'zu3' || t === 'mixed' || t === 'dan') {
       if (candLen >= 2) maxUnique += candLen * (candLen-1) / 2 * (candLen - 2);
     }
-    console.log(`[doGenerate] candLen=${candLen} type=${t} maxUnique=${maxUnique} count=${_pickState.count}`);
+    // (v5.8.17 debug log 已删)
     if (maxUnique < _pickState.count) {
       // v5.8.15:用户选了 N 注但 unique 不够 → 自动降为 maxUnique + 友好提示
       const typeName = { zu6: '组六', zu3: '组三', mixed: '组三+组六', dan: '不限' }[_pickState.type] || _pickState.type;
