@@ -773,12 +773,15 @@ window.FucaiFormula = (function () {
     const shiqiweiKill = new Set(
       allKills.filter(k => k.name === '上期十位直接杀').map(k => k.code)
     );
-    // ③用户手动杀号(v5.7,候选号点击加入)
-    const userKills = new Set(options.userKills || []);
-    // 总排除 = axisNumbers + 上期十位直接杀 + 用户手动(4-7 个号)
-    const exBai = new Set([...axisNums, ...shiqiweiKill, ...userKills]);
-    const exShi = new Set([...axisNums, ...shiqiweiKill, ...userKills]);
-    const exGe  = new Set([...axisNums, ...shiqiweiKill, ...userKills]);
+    // ③用户手动杀号(v5.7,候选号点击加入) — v5.8.15:分位独立
+    const userKillsRaw = options.userKills || [];
+    const userKillsPos = { bai: new Set(Array.isArray(userKillsRaw) ? userKillsRaw : (userKillsRaw.bai || [])), shi: new Set(Array.isArray(userKillsRaw) ? [] : (userKillsRaw.shi || [])), ge: new Set(Array.isArray(userKillsRaw) ? [] : (userKillsRaw.ge || [])) };
+    const userKillsFlat = new Set([...userKillsPos.bai, ...userKillsPos.shi, ...userKillsPos.ge]);
+    // 总排除 = axisNumbers + 上期十位直接杀 + 用户手动(分位 → 百/十/个 各减)
+    const exBai = new Set([...axisNums, ...shiqiweiKill, ...userKillsFlat, ...userKillsPos.bai]);
+    const exShi = new Set([...axisNums, ...shiqiweiKill, ...userKillsFlat, ...userKillsPos.shi]);
+    const exGe  = new Set([...axisNums, ...shiqiweiKill, ...userKillsFlat, ...userKillsPos.ge]);
+    const userKills = userKillsFlat;  // 兼容老代码
 
     // ─── 加权集合(在剩余里优先选)───
     // 高置信度选号(选对率 ≥ 35%)
