@@ -2185,14 +2185,15 @@ window.FucaiMain = (function () {
         switchTab('pick');
       });
     });
-    // v5.8.15:一键加定位杀 92%+
+    // v5.8.15 修:一键加定位杀 92%+ — 每位只取 rate 最高的 1 个(合计最多 3 个,避免杀太多选不到)
     document.querySelectorAll('[data-kc-add-pos]').forEach(b => {
       b.addEventListener('click', () => {
         if (!_killPool) return;
         if (!_pickState.killContain || !Array.isArray(_pickState.killContain)) _pickState.killContain = [];
         const posHot = new Set();
         ['bai', 'shi', 'ge'].forEach(pos => {
-          (_killPool[pos] || []).forEach(x => { if (x.rate >= 92) posHot.add(x.code); });
+          const list = (_killPool[pos] || []).filter(x => x.rate >= 92).sort((a, b) => b.rate - a.rate);
+          if (list[0]) posHot.add(list[0].code);  // 每位只取第 1 名
         });
         let added = 0;
         posHot.forEach(n => {
@@ -2202,7 +2203,7 @@ window.FucaiMain = (function () {
           }
         });
         if (added > 0) {
-          toast(`⭐ 已加 ${added} 个定位杀 92%+ 数字到杀组选`);
+          toast(`⭐ 已加 ${added} 个定位杀 92%+ 数字到杀组选(每位置 1 个)`);
         } else {
           toast('已全部加入(或 0 个 92%+ 数字)');
         }
