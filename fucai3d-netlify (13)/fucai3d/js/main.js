@@ -1022,9 +1022,10 @@ window.FucaiMain = (function () {
                   ge:  (Array.isArray(kcUI) ? [] : (kcUI.ge  || []))
                 };
                 return '';  // v5.8.15 去除分位杀说明栏(只留 chip)
+              })()}
               ${(() => {
-                // v5.8+ 推荐(根据当前期,优先定位杀 92%+)
                 return '';  // v5.8.15 去除定位杀推荐区
+              })()}
             </div>
           </div>
         </div>
