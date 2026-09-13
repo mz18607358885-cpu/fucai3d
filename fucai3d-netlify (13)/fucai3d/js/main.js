@@ -1005,7 +1005,7 @@ window.FucaiMain = (function () {
                   });
                   const total = posHot.bai.size + posHot.shi.size + posHot.ge.size;
                   if (total === 0) return '';
-                  return `<button class="opt-btn xs" data-kc-add-pos style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:700;padding:3px 8px;margin-left:auto;" title="一键把定位杀 92%+ 数字标记为杀(分位精确)">⭐ 一键杀定位 (${total}个)</button>`;
+                  return '';  // v5.8.15 去除 一键杀定位 按钮(误杀太多)
                 })()}
               </div>
               ${(() => {
@@ -1061,7 +1061,7 @@ window.FucaiMain = (function () {
           <div class="opt-row">
             <span class="opt-mini-label">注数:</span>
             ${countBtn(1)}${countBtn(3)}${countBtn(5)}${countBtn(10)}${countBtn(20)}${countBtn(50)}
-            <button class="opt-btn small" id="selectAllCount" style="background:linear-gradient(135deg,#6ef09e,#2dd4bf);color:#0a0e1a;font-weight:bold;margin-left:8px;" title="按当前候选数自动算 maxUnique(组六 C(n,3) 或 组三 C(n,2)*(n-2)),一键全选所有可能组合">🎯 全选 (maxUnique)</button>
+            <button class="opt-btn small" id="selectAllCount" style="display:none;">🎯 全选 (maxUnique)</button>
           </div>
           <div class="opt-row">
             <button class="share-btn big" id="genBtn" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg-2);">
