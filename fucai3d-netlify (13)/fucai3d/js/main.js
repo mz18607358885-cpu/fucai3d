@@ -906,20 +906,7 @@ window.FucaiMain = (function () {
           勾选策略(可多选),系统会基于最近 30 期历史自动选<strong>形态/奇偶/大小/跨度</strong>。生成结果仅供娱乐参考。
         </div>
 
-        <!-- 候选数提示 -->
-        <div class="mode-row">
-          ${isLow ? `
-            <div class="candidate-warn" style="background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);">
-              <strong style="color:#ff5060;">⚠️ 候选不足</strong><br>
-              百 ${restBai.length} / 十 ${restShi.length} / 个 ${restGe.length} — 系统可选号码较少<br>
-              <span style="font-size:11px;color:var(--text-3);">建议:减少策略 / 取消杀号</span>
-            </div>
-          ` : `
-            <div class="candidate-ok">
-              ✅ 候选充足 (百${restBai.length}/十${restShi.length}/个${restGe.length})
-            </div>
-          `}
-        </div>
+        <!-- v5.8.16 删:候选数提示(用户:候选功能权重这些不要了) -->
 
         <!-- 策略多选(v5.7.17:已删,直接用备选号随机选) -->
 
