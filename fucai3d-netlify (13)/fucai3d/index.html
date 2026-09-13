@@ -15,7 +15,7 @@
   <link rel="preload" href="css/style.css" as="style">
   <link rel="stylesheet" href="css/style.css">
   <!-- 关键 JS 预加载(defer 不阻塞,先下载) -->
-  <link rel="preload" href="js/main.js" as="script">
+  <link rel="preload" href="js/main.js?v=5.8.15" as="script">
   <link rel="preload" href="js/data.js" as="script">
   <!-- 字体/其他 preload 可加 -->
   <link rel="manifest" href="/manifest.json">
@@ -80,7 +80,7 @@
   <script defer src="js/latest.js"></script>
   <script defer src="js/autoUpdater.js"></script>
   <script defer src="js/myBets.js"></script>
-  <script defer src="js/main.js"></script>
+  <script defer src="js/main.js?v=5.8.15"></script>
   <script>
     // v5.7.8v:用 DOMContentLoaded 替代直接调,等所有 defer JS 加载完再 boot
     document.addEventListener('DOMContentLoaded', function() {
