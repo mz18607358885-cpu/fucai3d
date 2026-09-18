@@ -24,15 +24,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  // 不阻塞 install:后台预缓存就行
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => {
-      return cache.addAll(ASSETS).catch((err) => {
-        // 单个资源失败不影响整体
-        console.warn('[SW] 预缓存部分失败(继续):', err);
-      });
-    }).then(() => self.skipWaiting())
-  );
+  // v5.8.18:不预缓存所有 ASSETS(影响手机首屏速度)— 改为 lazy cache(用户请求时才缓存)
+  self.skipWaiting();  // 立刻激活新 SW
 });
 
 self.addEventListener('activate', (event) => {
