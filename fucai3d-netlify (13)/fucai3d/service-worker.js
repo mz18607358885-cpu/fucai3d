@@ -2,25 +2,18 @@
 // v5.8.12 优化:关键 JS 也走 stale-while-revalidate(秒开,后台更新)
 // 缓存策略:cache-first(命中返回缓存,miss 走网络)
 const CACHE = 'fc3d-v9';  // v5.8.12:改名强制刷新缓存(stale-while-revalidate 模式)
+// v5.8.18:只预缓存关键资源(主JS + CSS + index.html),其他 lazy
 const ASSETS = [
   '/',
   '/index.html',
-  '/sub.html',
-  '/manifest.json',
-  '/icon.svg',
-  '/favicon.ico',
   '/css/style.css',
   '/js/main.js',
-  '/js/data.js',
   '/js/formulas.js',
+  '/js/data.js',
   '/js/auth.js',
   '/js/countdown.js',
   '/js/dataFetcher.js',
-  '/js/netlifyBackend.js',
-  '/js/tokenAuth.js',
-  '/js/latest.js',
-  '/js/autoUpdater.js',
-  '/js/myBets.js'
+  '/js/autoUpdater.js'
 ];
 
 self.addEventListener('install', (event) => {
