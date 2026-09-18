@@ -3217,6 +3217,14 @@ window.FucaiMain = (function () {
       FucaiAuth.bindLogin(role, () => render());
     }
 
+    // v5.8.18:启动时自动清旧 SW + cache(手机首屏快速)
+    if ('serviceWorker' in navigator && window.caches) {
+      navigator.serviceWorker.getRegistrations().then((rs) => {
+        rs.forEach((r) => r.unregister());
+      });
+      caches.keys().then((ks) => ks.forEach((k) => caches.delete(k)));
+    }
+
     // v5.7.3:启动全自动数据更新(登录后或登录界面)
     if (window.FucaiAutoUpdater) {
       window.FucaiAutoUpdater.start({
