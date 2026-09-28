@@ -2599,13 +2599,13 @@ window.FucaiMain = (function () {
       allUniqueKeys.push({ key, weight });
     }
     if (candLen >= 3 && (_pickState.type === 'zu6' || _pickState.type === 'mixed' || _pickState.type === 'dan')) {
-      // 枚举 C(n,3) 组六 — v5.8.15 修:key 用 comma 分隔(与组三一致)
+      // 枚举 C(n,3) 组六 — v5.8.18 加 checkConstraints(奇偶/大小/跨度)
       for (let i = 0; i < candLen; i++) {
         for (let j = i + 1; j < candLen; j++) {
           for (let k = j + 1; k < candLen; k++) {
             const a = restBai[i], b = restBai[j], c = restBai[k];
+            if (!checkConstraints(a, b, c)) continue;  // v5.8.18:奇偶/大小/跨度 过滤
             const key = [a, b, c].sort((x, y) => x - y).join(',');
-            // 加权 = 3 个候选号权重之和(高权重 = 该组合优先级高)
             const w = (wBai.find(x => x.code === a)?.weight || 1)
                     + (wBai.find(x => x.code === b)?.weight || 1)
                     + (wBai.find(x => x.code === c)?.weight || 1);
@@ -2615,16 +2615,15 @@ window.FucaiMain = (function () {
       }
     }
     if (candLen >= 2 && (_pickState.type === 'zu3' || _pickState.type === 'mixed' || _pickState.type === 'dan')) {
-      // 枚举 C(n,2)*(n-2) 组三(选 2 同 + 1 不同)
+      // 枚举 C(n,2)*(n-2) 组三(选 2 同 + 1 不同)— v5.8.18 加 checkConstraints
       for (let i = 0; i < candLen; i++) {
         for (let j = i + 1; j < candLen; j++) {
-          const dup = restBai[i];  // 重复号
+          const dup = restBai[i];
           for (let k = 0; k < candLen; k++) {
-            if (k === i || k === j) continue;  // 跳过重复
+            if (k === i || k === j) continue;
             const other = restBai[k];
-            // 组三:{dup, dup, other} (dup=restBai[i] 出现 2 次)
-            // 排序后 unique 是 {dup, dup, other}
             const arr = [dup, dup, other].sort((x, y) => x - y);
+            if (!checkConstraints(arr[0], arr[1], arr[2])) continue;  // v5.8.18:奇偶/大小过滤
             const key = arr.join(',');
             addUnique(key, 1);
           }
@@ -2632,11 +2631,12 @@ window.FucaiMain = (function () {
       }
     }
     if (candLen >= 1 && (_pickState.type === 'dan' || _pickState.type === 'mixed' || _pickState.type === 'zu3')) {
-      // v5.8.15 修:豹子/组三只对 zu3/mixed/dan 枚举,zu6 只出组六
+      // v5.8.18 加 checkConstraints(奇偶/大小/跨度)
       for (let i = 0; i < candLen; i++) {
         const dup = restBai[i];
+        if (!checkConstraints(dup, dup, dup)) continue;
         const key = [dup, dup, dup].sort((x, y) => x - y).join(',');
-        addUnique(key, 0.3);  // 豹子权重低
+        addUnique(key, 0.3);
       }
     }
     // 按权重降序 + random 抖动,选前 N 个
