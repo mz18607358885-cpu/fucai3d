@@ -1,0 +1,21 @@
+# 静态资源长期缓存
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+*.svg
+  Cache-Control: public, max-age=86400
+
+# HTML 不缓存(总是获取最新)
+/
+  Cache-Control: no-cache, must-revalidate
+/index.html
+  Cache-Control: no-cache, must-revalidate
+/sub.html
+  Cache-Control: no-cache, must-revalidate
+/manifest.json
+  Cache-Control: public, max-age=3600
+
+# latest.json 短缓存
+/latest.json
+  Cache-Control: public, max-age=300
