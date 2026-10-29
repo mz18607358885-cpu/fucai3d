@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>console.log('[v5.8.17-fix] main.js?v=5.8.17 loaded, sw unregister active')</script>
+<title>福彩3D 杀号系统专业版</title>
+  <!-- v5.8.12 优化:内联关键 CSS(秒开,无白屏) -->
+  <style>
+    body { background: #0a0e1a; color: #e8e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
+    .skel { padding: 60px 20px; text-align: center; color: #a0a0b0; font-size: 14px; }
+    .skel-spinner { display: inline-block; width: 24px; height: 24px; border: 2px solid #2a3046; border-top-color: #f3c969; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <!-- 关键 CSS 预加载(秒开) -->
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- 关键 JS 预加载(defer 不阻塞,先下载) -->
+  <link rel="preload" href="js/main.js?v=5.8.17" as="script">
+  <link rel="preload" href="js/data.js" as="script">
+  <!-- 字体/其他 preload 可加 -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="福彩3D 智能杀号专业版系统,综合 15 个通杀公式 + 定位杀码 + 胆码 + 二码组合 + 组三组六 + 倒计时">
+</head>
+<body>
+  <div id="app"><div class="skel"><span class="skel-spinner"></span>加载中...</div></div>
+  <script>window.FUcaiPageRole = 'main';
+  // v5.7.1:主链接看到 URL 带 ?token= → 自动跳转副链接(防止旧版生成的错误 URL 失效)
+  (function() {
+    var t = new URLSearchParams(window.location.search).get('token');
+    if (t && /^vip-/.test(t)) {
+      var p = location.pathname.replace(/\/index\.html?$/i, '').replace(/\/?$/, '/');
+      location.replace(location.origin + p + 'sub.html?token=' + encodeURIComponent(t));
+      return;
+    }
+  })();
+  // 全局错误捕获:JS 出错时直接显示在页面上 + 详细堆栈
+  function showError(e, label) {
+    var app = document.getElementById('app');
+    if (!app) return;
+    var stack = (e.error && e.error.stack) || e.stack || '';
+    app.innerHTML = '<div style="padding:40px 20px;color:#ff5060;font-family:monospace;font-size:12px;line-height:1.6;max-width:900px;margin:40px auto;background:rgba(255,80,96,.08);border:1px solid rgba(255,80,96,.3);border-radius:8px;word-break:break-all;white-space:pre-wrap;">❌ JS 错误' + (label ? ' ['+label+']' : '') + '\n\n消息: ' + (e.message || '未知') + '\n位置: ' + (e.filename || '') + ':' + (e.lineno || 0) + ':' + (e.colno || 0) + '\n\n堆栈:\n' + stack + '\n\n请按 Cmd+Shift+R (Mac) / Ctrl+Shift+R (Win) 强刷';
+  }
+  // 忽略"Script error" — 这是浏览器对跨源 JS 错误的隐藏显示,通常无害(扩展/广告/CSP)
+  // 只显示真实错误
+  function isUsefulError(e) {
+    var msg = (e && e.message) || '';
+    if (msg === 'Script error.') return false;
+    if (msg === 'Script error') return false;
+    return true;
+  }
+  window.addEventListener('error', function(e) { if (isUsefulError(e)) showError(e, 'window.error'); });
+  window.addEventListener('unhandledrejection', function(e) {
+    var reason = e.reason;
+    var msg = (reason && (reason.message || reason)) || '';
+    if (msg === 'Script error.') return;  // 跨源 promise rejection
+    showError({message: String(msg), stack: reason && reason.stack}, 'promise');
+  });
+  // 包装 console.error 也捕获(忽略 Script error)
+  var _origConsoleError = console.error;
+  console.error = function() {
+    _origConsoleError.apply(console, arguments);
+    try {
+      var args = Array.from(arguments);
+      var combined = args.join(' ');
+      if (combined === 'Script error.' || combined === 'Script error') return;
+      showError({message: combined}, 'console.error');
+    } catch(_) {}
+  };
+  </script>
+  <script defer src="js/data.js"></script>
+  <script defer src="js/formulas.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/countdown.js"></script>
+  <script defer src="js/dataFetcher.js"></script>
+  <script defer src="js/netlifyBackend.js?v=5.8.20"></script>
+  <script defer src="js/tokenAuth.js?v=5.8.20"></script>
+  <script defer src="js/latest.js"></script>
+  <script defer src="js/autoUpdater.js"></script>
+  <script defer src="js/myBets.js"></script>
+  <script defer src="js/main.js?v=5.8.17"></script>
+  <script>
+    // v5.7.8v:用 DOMContentLoaded 替代直接调,等所有 defer JS 加载完再 boot
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.FucaiMain && window.FucaiMain.boot) {
+        window.FucaiMain.boot();
+      } else {
+        console.error('FucaiMain 未加载');
+      }
+    });
+  </script>
+  <script>
+    // v5.8.17:清旧 SW + cache,但只清一次(用 localStorage 标记防无限 reload)
+    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v9')) {
+      localStorage.setItem('sw_cleaned_v9', '1');
+      navigator.serviceWorker.getRegistrations().then(function(rs) {
+        rs.forEach(function(r) { r.unregister(); });
+      });
+      if (window.caches) {
+        caches.keys().then(function(ks) {
+          ks.forEach(function(k) { caches.delete(k); });
+          setTimeout(function() { location.reload(); }, 500);
+        });
+      }
+    }
+    // v5.7.9:注册新 Service Worker(PWA 离线缓存)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js?v=5.8.17').then(function(reg) {
+          console.log('[PWA] Service Worker 注册成功,scope:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[PWA] Service Worker 注册失败:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
