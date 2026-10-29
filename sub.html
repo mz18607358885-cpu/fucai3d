@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>福彩3D 智能杀号专业版系统 · 副链接</title>
+  <!-- v5.8.12 优化:内联关键 CSS(秒开,无白屏) -->
+  <style>
+    body { background: #0a0e1a; color: #e8e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
+    .skel { padding: 60px 20px; text-align: center; color: #a0a0b0; font-size: 14px; }
+    .skel-spinner { display: inline-block; width: 24px; height: 24px; border: 2px solid #2a3046; border-top-color: #f3c969; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <!-- 关键 CSS 预加载(秒开) -->
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- 关键 JS 预加载 -->
+  <link rel="preload" href="js/main.js?v=5.8.17" as="script">
+  <link rel="preload" href="js/data.js" as="script">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="福彩3D 智能杀号专业版系统(副链接,功能一致 · 不含分享)">
+</head>
+<body>
+  <div id="app"><div class="skel"><span class="skel-spinner"></span>加载中...</div></div>
+  <script>window.FUcaiPageRole = 'sub';
+  // 忽略"Script error" — 这是浏览器对跨源 JS 错误的隐藏显示,通常无害(扩展/广告/CSP)
+  function _isUsefulErr(e) {
+    var msg = (e && e.message) || '';
+    return msg !== 'Script error.' && msg !== 'Script error';
+  }
+  window.addEventListener('error', function(e) {
+    if (!_isUsefulErr(e)) return;
+    var app = document.getElementById('app');
+    if (app) app.innerHTML = '<div style="padding:40px 20px;color:#ff5060;font-family:monospace;font-size:13px;line-height:1.7;max-width:800px;margin:0 auto;background:rgba(255,80,96,.1);border:1px solid rgba(255,80,96,.3);border-radius:8px;margin-top:40px;">❌ JS 错误<br><br>' +
+      '<b>' + (e.message || '未知错误') + '</b><br>' +
+      '<span style="color:#888;">' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '') + '</span><br><br>' +
+      '请按 Ctrl+Shift+R (Win) / Cmd+Shift+R (Mac) 强制刷新缓存</div>';
+  });
+  </script>
+  <script defer src="js/data.js"></script>
+  <script defer src="js/formulas.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/countdown.js"></script>
+  <script defer src="js/dataFetcher.js"></script>
+  <script defer src="js/netlifyBackend.js?v=5.8.20"></script>
+  <script defer src="js/tokenAuth.js?v=5.8.20"></script>
+  <script defer src="js/latest.js"></script>
+  <script defer src="js/autoUpdater.js"></script>
+  <script defer src="js/myBets.js"></script>
+  <script defer src="js/main.js?v=5.8.17"></script>
+  <script>
+    // v5.7.8v:用 DOMContentLoaded 等所有 defer JS 加载完
+    document.addEventListener('DOMContentLoaded', function() {
+    // v5.7.5:副链接 token 验证(异步 GitHub 验证)
+    (async function() {
+      var token = window.FucaiTokenAuth.getTokenFromUrl();
+      if (!token) {
+        document.getElementById('app').innerHTML =
+          '<div style="padding:60px 20px;text-align:center;color:#ff5060;max-width:600px;margin:60px auto;">' +
+          '<h2 style="margin:0 0 14px;">🔒 副链接需要授权</h2>' +
+          '<p style="color:var(--text-2);line-height:1.7;">请通过主链接生成副链接,链接里会带 <code style="background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px;">?token=xxx</code> 参数。</p>' +
+          '<p style="color:var(--text-3);font-size:13px;">URL 格式:<code style="background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px;">?token=vip-xxxxxx</code></p>' +
+          '</div>';
+        return;
+      }
+      var result = await window.FucaiTokenAuth.verifyTokenAsync(token);
+      if (!result.ok) {
+        document.getElementById('app').innerHTML =
+          '<div style="padding:60px 20px;text-align:center;color:#ff5060;max-width:600px;margin:60px auto;">' +
+          '<h2 style="margin:0 0 14px;">❌ 副链接无法访问</h2>' +
+          '<p style="color:#ff5060;font-size:18px;font-weight:bold;margin:14px 0;">' + result.reason + '</p>' +
+          '<p style="color:var(--text-3);font-size:12px;">如有问题请联系主链接所有者。</p>' +
+          '</div>';
+        return;
+      }
+      // 验证通过,继续 boot(这会启动 autoUpdater,实时更新数据)
+      FucaiMain.boot();
+    })();
+    });  // DOMContentLoaded 结束
+  </script>
+  <script>
+    // v5.8.17:清旧 SW + cache,但只清一次(用 localStorage 标记防无限 reload)
+    if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v9')) {
+      localStorage.setItem('sw_cleaned_v9', '1');
+      navigator.serviceWorker.getRegistrations().then(function(rs) {
+        rs.forEach(function(r) { r.unregister(); });
+      });
+      if (window.caches) {
+        caches.keys().then(function(ks) {
+          ks.forEach(function(k) { caches.delete(k); });
+          setTimeout(function() { location.reload(); }, 500);
+        });
+      }
+    }
+    // v5.7.9:注册新 Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js?v=5.8.17').then(function(reg) {
+          console.log('[PWA] Service Worker 注册成功,scope:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[PWA] Service Worker 注册失败:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
