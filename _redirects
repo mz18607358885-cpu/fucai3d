@@ -1,2 +1,2 @@
-# SPA fallback — 任何 404 自动跳 index.html
-/*    /index.html   200
+# 不写 /* /index.html 200 — 让 Cloudflare Pages clean URL 接管 /sub → sub.html
+# 这样 /sub 自动返回 sub.html 内容(SPA fallback 会覆盖 clean URL)
